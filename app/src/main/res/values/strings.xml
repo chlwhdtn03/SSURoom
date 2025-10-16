@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">SSURoom</string>
+    <string name="my_info">My</string>
+    <string name="favorite">Favor</string>
+    <string name="home">Home</string>
+    <string name="filter">Filter</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
