@@ -4,7 +4,6 @@
     <string name="favorite">Favor</string>
     <string name="home">Home</string>
     <string name="filter">Filter</string>
-    <string name="search_hint">Region or Station name</string>
-    <string name="filterDescription">Find some items via filter</string>
-    <string name="priceLevel">Price (10000KRW)</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
