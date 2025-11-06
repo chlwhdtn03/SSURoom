@@ -19,6 +19,8 @@ import com.naver.maps.map.UiSettings;
 import com.naver.maps.map.util.FusedLocationSource;
 
 import cse.ssuroom.R;
+import cse.ssuroom.bottomsheet.FilterBottomSheet;
+import cse.ssuroom.databinding.FragmentMapBinding;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -27,6 +29,7 @@ import cse.ssuroom.R;
  */
 public class MapFragment extends Fragment implements OnMapReadyCallback {
     private FusedLocationSource locationSource;
+    private FragmentMapBinding binding;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1000;
 
     // TODO: Rename parameter arguments, choose names that match
@@ -80,10 +83,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_map, container, false);
+        binding = FragmentMapBinding.inflate(inflater, container, false);
+
+
+        binding.filterBtn.setOnClickListener(view -> {
+            new FilterBottomSheet().show(getChildFragmentManager(), "filter");
+        });
+
+        return binding.getRoot();
     }
 
     @Override

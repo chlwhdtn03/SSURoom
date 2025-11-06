@@ -6,4 +6,6 @@
     <string name="home">홈</string>
     <string name="filter">필터</string>
     <string name="search_hint">지역 또는 역 검색</string>
+    <string name="filterDescription">원하는 조건으로 매물을 찾아보세요</string>
+    <string name="priceLevel">가격대 (만원)</string>
 </resources>
