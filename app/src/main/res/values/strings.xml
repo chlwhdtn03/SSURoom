@@ -1,9 +1,14 @@
 <resources>
     <string name="app_name">SSURoom</string>
-    <string name="my_info">My</string>
+    <string name="roomlist">Roomlist</string>
     <string name="favorite">Favor</string>
+    <string name="map">Map</string>
+    <string name="chat">Chat</string>"
+    <string name="my_info">My info</string>
     <string name="home">Home</string>
     <string name="filter">Filter</string>
+    <string name="search_hint">Region or Station name</string>
+    <string name="filterDescription">Find some items via filter</string>
+    <string name="priceLevel">Price (10000KRW)</string>
     <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
