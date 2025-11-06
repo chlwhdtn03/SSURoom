@@ -2,18 +2,18 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/action_roomlist"
         android:icon="@drawable/ic_roomlist"
-        android:title="매물"/>
+        android:title="@string/roomlist"/>
     <item android:id="@+id/action_favor"
         android:icon="@drawable/ic_favor"
-        android:title="즐겨찾기"/>
+        android:title="@string/favorite"/>
     <item
         android:id="@+id/action_map"
         android:icon="@drawable/ic_map"
-        android:title="지도"/>
+        android:title="@string/map"/>
     <item android:id="@+id/action_chat"
         android:icon="@drawable/ic_chat"
-        android:title="채팅"/>
+        android:title="@string/chat"/>
     <item android:id="@+id/action_myinfo"
         android:icon="@drawable/ic_myinfo"
-        android:title="내정보"/>
+        android:title="@string/my_info"/>
 </menu>
