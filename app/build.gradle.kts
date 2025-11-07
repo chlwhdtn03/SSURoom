@@ -1,7 +1,8 @@
 plugins {
 
     alias(libs.plugins.android.application)
-    id("com.google.gms.google-services")
+    alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.google.services)
 
 }
 
@@ -53,7 +54,6 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
-    implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
-    implementation("com.google.firebase:firebase-analytics")
-
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
 }
