@@ -14,3 +14,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+/*.studiobot.xml
+
+/app/google-services.json
+/.idea/studiobot.xml
