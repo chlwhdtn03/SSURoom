@@ -55,7 +55,7 @@ public class RoomlistFragment extends Fragment {
     private void updateView(boolean isChecked) {
         if (isChecked) {
             // 계약양도
-            header.setBackgroundColor(Color.parseColor("#4285F4")); // Google Blue??
+            header.setBackgroundColor(Color.parseColor("#4285F4")); // Google Blue 이게 좋아보임
             shortTermRentLabel.setTextColor(Color.WHITE);
             leaseTransferLabel.setTextColor(Color.BLACK);
         } else {

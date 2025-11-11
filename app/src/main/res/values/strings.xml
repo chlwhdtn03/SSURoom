@@ -10,5 +10,19 @@
     <string name="search_hint">Region or Station name</string>
     <string name="filterDescription">Find some items via filter</string>
     <string name="priceLevel">Price (10000KRW)</string>
-    <!-- TODO: Remove or change this placeholder text -->
+    <string name="login">Login</string>
+    <string name="register">Register"</string>
+    <string name="register_prompt">Don\'t have an account? Register</string>
+    <string name="login_prompt">Already have an account? Login</string>
+    <string name="app_slogan">An empty space for new relationships</string>
+    <string name="name">name</string>
+    <string name="email">email</string>
+    <string name="phone">phone number</string>
+    <string name="password">password (more than 8 length)</string>
+    <string name="password_confirm">password_confirm</string>
+    <string name="verification_code">Auth code</string>
+    <string name="check">check</string>
+    <string name="verify">Verify</string>
+
+
 </resources>
