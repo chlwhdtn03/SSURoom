@@ -39,11 +39,11 @@ public class MyInfoFragment extends Fragment {
      * @return A new instance of fragment MyInfoFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static MyInfoFragment newInstance() {
+    public static MyInfoFragment newInstance(String param1, String param2) {
         MyInfoFragment fragment = new MyInfoFragment();
         Bundle args = new Bundle();
-//        args.putString(ARG_PARAM1, param1);
-//        args.putString(ARG_PARAM2, param2);
+        args.putString(ARG_PARAM1, param1);
+        args.putString(ARG_PARAM2, param2);
         fragment.setArguments(args);
         return fragment;
     }
