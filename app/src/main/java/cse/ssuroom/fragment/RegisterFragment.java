@@ -1,6 +1,7 @@
 package cse.ssuroom.fragment;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,30 +12,26 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import cse.ssuroom.MainActivity;
 import cse.ssuroom.R;
 import cse.ssuroom.databinding.FragmentRegisterBinding;
+import cse.ssuroom.user.User;
 
 public class RegisterFragment extends Fragment {
 
     private FragmentRegisterBinding binding;
     private FirebaseAuth mAuth;
+    private FirebaseFirestore db;
     private boolean isEmailChecked = false;
     private String checkedEmail = "";
 
@@ -45,6 +42,8 @@ public class RegisterFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentRegisterBinding.inflate(inflater, container, false);
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+
 
         gotoLoginLink(); // 파란색 글씨로 이미 회원가입 했으면 바로 로그인 화면으로 이동
 
@@ -150,8 +149,8 @@ public class RegisterFragment extends Fragment {
     private void createAccount(){
         String name = binding.etName.getText().toString().trim();
         String email = binding.etEmail.getText().toString().trim();
-        String password = binding.etPassword.getText().toString();
-        String confirmPassword = binding.etConfirmPassword.getText().toString();
+        String password = binding.etPassword.getText().toString().trim();
+        String confirmPassword = binding.etConfirmPassword.getText().toString().trim();
 
         // 회원가입 전, 중복 확인을 통과했는지 검사
         if (!isEmailChecked) {
@@ -184,12 +183,17 @@ public class RegisterFragment extends Fragment {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(requireActivity(), task -> {
                     if (task.isSuccessful()) {
-                        Toast.makeText(getContext(), "회원가입 성공", Toast.LENGTH_SHORT).show();
-                        FirebaseUser user = mAuth.getCurrentUser();
-                        // TODO : 여기서 원하는 유저 정보 빼올 수 있음. 아니면 여기서 유저 데이터를 데이터
-                        getParentFragmentManager().popBackStack(); //다시 로그인 화면으로 이동.
+                        FirebaseUser firebaseUser = mAuth.getCurrentUser();
+                        if (firebaseUser != null) {
+                            User newUser = new User(firebaseUser.getUid(), name, email);
+                            saveUserToFirestore(newUser);
+                        }
+                        else{ // TODO : 에러 처리 필요 (firebaseUser가 null일 경우)
+                            Toast.makeText(getContext(), "회원가입 실패: firebaseUser가 null입니다.", Toast.LENGTH_LONG).show();
+                            getParentFragmentManager().popBackStack(); //다시 로그인 화면으로 이동.
+                        }
                     }
-                    else {
+                    else { // 회원가입 실패
                         if (task.getException() != null) {
                             Toast.makeText(getContext(), "회원가입 실패: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         } else {
@@ -197,6 +201,23 @@ public class RegisterFragment extends Fragment {
                         }
                         // TODO : 오류 원인을 다시 봐야할 듯
                     }
+                });
+
+    }
+    // 방금 회원가입한 User의 정보를 Firestore에 저장
+    private void saveUserToFirestore(User user){
+        db.collection("users").document(user.getUid())
+                .set(user)
+                .addOnSuccessListener(aVoid -> {
+                    Log.d("RegisterFragment","User saved to Firestore: " + user.getUid());
+                    Toast.makeText(getContext(), "회원가입 성공", Toast.LENGTH_SHORT).show();
+                    getParentFragmentManager().popBackStack(); //다시 로그인 화면으로 이동.
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("RegisterFragment", "Error saving user to Firestore", e);
+                    // TODO : 회원가입은 되었는데, FireStore에 유저 정보가 저장되지 않았을 때의 처리 어떻게 하죠 ㅠㅜ
+                    Toast.makeText(getContext(), "회원가입 실패: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    getParentFragmentManager().popBackStack(); //다시 로그인 화면으로 이동.
                 });
 
     }
