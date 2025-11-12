@@ -23,5 +23,7 @@
     <string name="password_confirm">비밀번호 확인</string>
     <string name="verification_code">인증번호</string>
     <string name="check">중복확인</string>
+    <string name="email_available">사용 가능</string>
+    <string name="email_unavailable">사용불가</string>
     <string name="verify">인증확인</string>
 </resources>

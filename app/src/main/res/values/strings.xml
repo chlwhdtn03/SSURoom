@@ -22,6 +22,8 @@
     <string name="password_confirm">password_confirm</string>
     <string name="verification_code">Auth code</string>
     <string name="check">check</string>
+    <string name="email_available">available</string>
+    <string name="email_unavailable">unavailable</string>
     <string name="verify">Verify</string>
 
 
