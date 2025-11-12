@@ -2,7 +2,7 @@ package cse.ssuroom.database;
 
 /**
  * 양도 매물(LeaseTransfer)에 대한 데이터베이스 처리를 담당하는 클래스.
- * 공통 로직은 PropertyRepository로부터 상속받습니다.
+ * 공통 로직은 PropertyRepository로부터 상속
  */
 public class LeaseTransferRepository extends PropertyRepository<LeaseTransfer> {
 

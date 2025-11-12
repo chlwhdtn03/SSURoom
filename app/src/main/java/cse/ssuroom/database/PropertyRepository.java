@@ -11,10 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 모든 매물 Repository의 공통 기능을 담는 추상 클래스입니다.
+ * 모든 매물 Repository의 공통 기능을 담는 부모 클래스입니다.
  * 제네릭 타입 T는 Property를 상속받는 클래스(LeaseTransfer, ShortTerm 등)를 의미합니다.
  */
-public abstract class PropertyRepository<T extends Property> {
+public class PropertyRepository<T extends Property> {
 
     protected FirebaseFirestore db = FirebaseFirestore.getInstance();
     private final String collectionName;
@@ -79,7 +79,7 @@ public abstract class PropertyRepository<T extends Property> {
                 });
     }
 
-    // R: Host ID로 매물 조회 (자식 클래스에서도 공통으로 사용)
+    // R: Host ID로 매물 조회
     public void findByHostId(String hostId, OnPropertiesLoaded<T> listener) {
         db.collection(collectionName)
                 .whereEqualTo("hostId", hostId)

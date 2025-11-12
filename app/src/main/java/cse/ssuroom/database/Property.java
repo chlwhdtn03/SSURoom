@@ -5,118 +5,172 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * 모든 매물(단기, 양도)의 공통 정보를 담는 부모 클래스입니다.
+ * 모든 매물의 공통 정보를 담는 부모 클래스
  */
-public abstract class Property {
+public class Property {
 
+    // --- 기본 정보 ---
     private String title;
     private String description;
-    private String roomType;
     private String hostId;
-    private int floor;
-    private double area;
     private Date createdAt;
-
-    private HashMap<String, Object> details;
-    private HashMap<String, Object> pricing;
-    private HashMap<String, Object> amenities;
-    private HashMap<String, Object> availability;
-    private HashMap<String, Object> scores;
-    private HashMap<String, Object> location;
     private List<String> photos;
 
-    public Property() {}
+    // --- 매물 상세 정보 ---
+    private String roomType;
+    private int floor;
+    private double area;
 
+    // --- 날짜 정보 ---
+    private Date moveInDate;
+    private Date moveOutDate;
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public String getRoomType() { return roomType; }
-    public void setRoomType(String roomType) { this.roomType = roomType; }
-    public String getHostId() { return hostId; }
-    public void setHostId(String hostId) { this.hostId = hostId; }
-    public int getFloor() { return floor; }
-    public void setFloor(int floor) { this.floor = floor; }
-    public double getArea() { return area; }
-    public void setArea(double area) { this.area = area; }
-    public Date getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
-    public HashMap<String, Object> getDetails() { return details; }
-    public void setDetails(HashMap<String, Object> details) { this.details = details; }
-    public HashMap<String, Object> getPricing() { return pricing; }
-    public void setPricing(HashMap<String, Object> pricing) { this.pricing = pricing; }
-    public HashMap<String, Object> getAmenities() { return amenities; }
-    public void setAmenities(HashMap<String, Object> amenities) { this.amenities = amenities; }
-    public HashMap<String, Object> getAvailability() { return availability; }
-    public void setAvailability(HashMap<String, Object> availability) { this.availability = availability; }
-    public HashMap<String, Object> getScores() { return scores; }
-    public void setScores(HashMap<String, Object> scores) { this.scores = scores; }
-    public HashMap<String, Object> getLocation() { return location; }
-    public void setLocation(HashMap<String, Object> location) { this.location = location; }
-    public List<String> getPhotos() { return photos; }
-    public void setPhotos(List<String> photos) { this.photos = photos; }
+    // --- 복합 정보 (가격, 위치, 옵션, 점수) ---
+    private HashMap<String, Object> pricing;
+    private HashMap<String, Object> location;
+    private HashMap<String, Object> amenities;
+    private HashMap<String, Object> scores;
 
     /**
-     * 제네릭을 사용한 공통 빌더 클래스.
-     * T: 빌더가 생성할 최종 객체의 타입 (e.g., ShortTerm)
-     * B: 빌더 자기 자신의 타입 (e.g., ShortTerm.Builder)
+     * Firestore가 데이터를 객체로 변환할 때 오류가 나지 않도록 비어있는 기본 생성자가 반드시 필요합니다.
      */
-    @SuppressWarnings("unchecked") // "this"를 B로 캐스팅하는 것은 항상 안전합니다.
-    public abstract static class Builder<T extends Property, B extends Builder<T, B>> {
-        private String title;
-        private String description;
-        private String roomType;
-        private String hostId;
-        private int floor;
-        private double area;
-        private Date createdAt;
-        private HashMap<String, Object> details = new HashMap<>();
-        private HashMap<String, Object> pricing = new HashMap<>();
-        private HashMap<String, Object> amenities = new HashMap<>();
-        private HashMap<String, Object> availability = new HashMap<>();
-        private HashMap<String, Object> scores = new HashMap<>();
-        private HashMap<String, Object> location = new HashMap<>();
-        private List<String> photos;
+    public Property() {}
 
-        protected B self() {
-            return (B) this;
-        }
+    /**
+     * 매물을 등록할 때 필요한 모든 정보를 받는 생성자입니다.
+     */
+    public Property(String title, String description, String hostId, List<String> photos,
+                    String roomType, int floor, double area, 
+                    Date moveInDate, Date moveOutDate,
+                    HashMap<String, Object> pricing, HashMap<String, Object> location, 
+                    HashMap<String, Object> amenities, HashMap<String, Object> scores) {
+        this.title = title;
+        this.description = description;
+        this.hostId = hostId;
+        this.photos = photos;
+        this.roomType = roomType;
+        this.floor = floor;
+        this.area = area;
+        this.moveInDate = moveInDate;
+        this.moveOutDate = moveOutDate;
+        this.pricing = pricing;
+        this.location = location;
+        this.amenities = amenities;
+        this.scores = scores;
+        this.createdAt = new Date(); // 객체가 생성되는 시점의 시간으로 자동 설정
+    }
 
-        public B setTitle(String title) { this.title = title; return self(); }
-        public B setDescription(String description) { this.description = description; return self(); }
-        public B setRoomType(String roomType) { this.roomType = roomType; return self(); }
-        public B setHostId(String hostId) { this.hostId = hostId; return self(); }
-        public B setFloor(int floor) { this.floor = floor; return self(); }
-        public B setArea(double area) { this.area = area; return self(); }
-        public B setCreatedAt(Date createdAt) { this.createdAt = createdAt; return self(); }
-        public B setDetails(HashMap<String,Object> details) { this.details = details; return self(); }
-        public B setPricing(HashMap<String,Object> pricing) { this.pricing = pricing; return self(); }
-        public B setAmenities(HashMap<String,Object> amenities) { this.amenities = amenities; return self(); }
-        public B setAvailability(HashMap<String,Object> availability) { this.availability = availability; return self(); }
-        public B setScores(HashMap<String,Object> scores) { this.scores = scores; return self(); }
-        public B setLocation(HashMap<String,Object> location) { this.location = location; return self(); }
-        public B setPhotos(List<String> photos) { this.photos = photos; return self(); }
+    // --- Getters and Setters ---
 
-        // 자식 빌더에서 이 메소드를 구현하여 실제 객체를 생성합니다.
-        public abstract T build();
+    public String getTitle() {
+        return title;
+    }
 
-        // 자식 클래스가 부모의 속성을 쉽게 설정할 수 있도록 돕는 메소드입니다.
-        protected void build(T property) {
-            property.setTitle(this.title);
-            property.setDescription(this.description);
-            property.setRoomType(this.roomType);
-            property.setHostId(this.hostId);
-            property.setFloor(this.floor);
-            property.setArea(this.area);
-            property.setCreatedAt(this.createdAt);
-            property.setDetails(this.details);
-            property.setPricing(this.pricing);
-            property.setAmenities(this.amenities);
-            property.setAvailability(this.availability);
-            property.setScores(this.scores);
-            property.setLocation(this.location);
-            property.setPhotos(this.photos);
-        }
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getHostId() {
+        return hostId;
+    }
+
+    public void setHostId(String hostId) {
+        this.hostId = hostId;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public List<String> getPhotos() {
+        return photos;
+    }
+
+    public void setPhotos(List<String> photos) {
+        this.photos = photos;
+    }
+
+    public String getRoomType() {
+        return roomType;
+    }
+
+    public void setRoomType(String roomType) {
+        this.roomType = roomType;
+    }
+
+    public int getFloor() {
+        return floor;
+    }
+
+    public void setFloor(int floor) {
+        this.floor = floor;
+    }
+
+    public double getArea() {
+        return area;
+    }
+
+    public void setArea(double area) {
+        this.area = area;
+    }
+
+    public Date getMoveInDate() {
+        return moveInDate;
+    }
+
+    public void setMoveInDate(Date moveInDate) {
+        this.moveInDate = moveInDate;
+    }
+
+    public Date getMoveOutDate() {
+        return moveOutDate;
+    }
+
+    public void setMoveOutDate(Date moveOutDate) {
+        this.moveOutDate = moveOutDate;
+    }
+
+    public HashMap<String, Object> getPricing() {
+        return pricing;
+    }
+
+    public void setPricing(HashMap<String, Object> pricing) {
+        this.pricing = pricing;
+    }
+
+    public HashMap<String, Object> getLocation() {
+        return location;
+    }
+
+    public void setLocation(HashMap<String, Object> location) {
+        this.location = location;
+    }
+
+    public HashMap<String, Object> getAmenities() {
+        return amenities;
+    }
+
+    public void setAmenities(HashMap<String, Object> amenities) {
+        this.amenities = amenities;
+    }
+
+    public HashMap<String, Object> getScores() {
+        return scores;
+    }
+
+    public void setScores(HashMap<String, Object> scores) {
+        this.scores = scores;
     }
 }
