@@ -1,9 +1,20 @@
 package cse.ssuroom.fragment;
 
 import android.Manifest;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureRequest;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
 import android.util.Log;
+import android.view.Surface;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -18,7 +29,9 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.google.ar.core.ArCoreApk;
+import com.google.ar.core.Config;
 import com.google.ar.core.Session;
+import com.google.ar.core.SharedCamera;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
@@ -33,6 +46,10 @@ import com.naver.maps.map.OnMapReadyCallback;
 import com.naver.maps.map.UiSettings;
 import com.naver.maps.map.util.FusedLocationSource;
 
+import java.util.EnumSet;
+import java.util.List;
+
+import cse.ssuroom.ArActivity;
 import cse.ssuroom.R;
 import cse.ssuroom.bottomsheet.FilterBottomSheet;
 import cse.ssuroom.databinding.FragmentMapBinding;
@@ -47,11 +64,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private FragmentMapBinding binding;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1000;
 
-    private String TAG = "[AR]";
-
-    private boolean isUserRequestedInstall = true;
-    private Session session;
-
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -60,8 +72,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
-
-    private ActivityResultLauncher<String> requestPermissionLauncher;
 
     public MapFragment() {
 
@@ -102,25 +112,24 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-
-        requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-            if (isGranted) {
-                // Permission granted
-            } else {
-                Toast.makeText(getContext(), "카메라 권한이 필요합니다.", Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         // Inflate the layout for this fragment
         binding = FragmentMapBinding.inflate(inflater, container, false);
 
 
         binding.filterBtn.setOnClickListener(view -> {
             new FilterBottomSheet().show(getChildFragmentManager(), "filter");
+        });
+
+        binding.ARBtn.setOnClickListener(view -> {
+            if(isARCoreSupportedAndUpToDate()) {
+                startActivity(new Intent(getActivity(), ArActivity.class));
+            }
         });
 
         maybeEnableArButton();
@@ -131,40 +140,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onResume() {
         super.onResume();
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissionLauncher.launch(Manifest.permission.CAMERA);
-        }
-
-        try {
-            if (session == null) {
-                switch (ArCoreApk.getInstance().requestInstall(getActivity(), isUserRequestedInstall)) {
-                    case INSTALLED:
-                        // Success: Safe to create the AR session.
-                        session = new Session(getContext());
-                        break;
-                    case INSTALL_REQUESTED:
-                        // When this method returns `INSTALL_REQUESTED`:
-                        // 1. ARCore pauses this activity.
-                        // 2. ARCore prompts the user to install or update Google Play
-                        //    Services for AR (market://details?id=com.google.ar.core).
-                        // 3. ARCore downloads the latest device profile data.
-                        // 4. ARCore resumes this activity. The next invocation of
-                        //    requestInstall() will either return `INSTALLED` or throw an
-                        //    exception if the installation or update did not succeed.
-                        isUserRequestedInstall = false;
-                }
-            }
-        } catch (UnavailableUserDeclinedInstallationException e) {
-            Toast.makeText(getContext(), "TODO: handle exception " + e, Toast.LENGTH_LONG).show();
-        } catch (UnavailableDeviceNotCompatibleException e) {
-            throw new RuntimeException(e);
-        } catch (UnavailableSdkTooOldException e) {
-            throw new RuntimeException(e);
-        } catch (UnavailableArcoreNotInstalledException e) {
-            throw new RuntimeException(e);
-        } catch (UnavailableApkTooOldException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public void maybeEnableArButton() {
@@ -182,9 +157,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if(session != null) {
-            session.close();
-        }
     }
 
     // Verify that ARCore is installed and using the current version.
@@ -201,13 +173,13 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     ArCoreApk.InstallStatus installStatus = ArCoreApk.getInstance().requestInstall(getActivity(), true);
                     switch (installStatus) {
                         case INSTALL_REQUESTED:
-                            Log.i(TAG, "ARCore installation requested.");
+                            Log.i("[AR]", "ARCore installation requested.");
                             return false;
                         case INSTALLED:
                             return true;
                     }
                 } catch (UnavailableException e) {
-                    Log.e(TAG, "ARCore not installed", e);
+                    Log.e("[AR]", "ARCore not installed", e);
                 }
                 return false;
 
@@ -231,7 +203,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         naverMap.setCameraPosition(new CameraPosition(new LatLng(37.4959, 126.9577), 15));
         naverMap.setLocationSource(locationSource);
         UiSettings us = naverMap.getUiSettings();
-
         us.setLocationButtonEnabled(true);
     }
 
