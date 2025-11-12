@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import cse.ssuroom.database.LeaseTransfer;
+import cse.ssuroom.database.LeaseTransferRepository;
 import cse.ssuroom.fragment.LoginFragment;
 
 public class LoginActivity extends AppCompatActivity {
@@ -22,5 +24,12 @@ public class LoginActivity extends AppCompatActivity {
             fragmentTransaction.add(R.id.fragment_container, new LoginFragment());
             fragmentTransaction.commit();
         }
+         // Testing
+//        new LeaseTransferRepository().getAllLeases(list -> {
+//            System.out.println("List size: " + list.size());
+//            list.forEach(System.out::println);
+//        });
+
+
     }
 }
