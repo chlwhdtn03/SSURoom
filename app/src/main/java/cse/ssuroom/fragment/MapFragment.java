@@ -1,15 +1,43 @@
 package cse.ssuroom.fragment;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CaptureRequest;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
+import android.util.Log;
+import android.view.Surface;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.google.ar.core.ArCoreApk;
+import com.google.ar.core.Config;
+import com.google.ar.core.Session;
+import com.google.ar.core.SharedCamera;
+import com.google.ar.core.exceptions.UnavailableApkTooOldException;
+import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
+import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
+import com.google.ar.core.exceptions.UnavailableException;
+import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
+import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import com.naver.maps.geometry.LatLng;
 import com.naver.maps.map.CameraPosition;
 import com.naver.maps.map.MapView;
@@ -18,6 +46,10 @@ import com.naver.maps.map.OnMapReadyCallback;
 import com.naver.maps.map.UiSettings;
 import com.naver.maps.map.util.FusedLocationSource;
 
+import java.util.EnumSet;
+import java.util.List;
+
+import cse.ssuroom.ArActivity;
 import cse.ssuroom.R;
 import cse.ssuroom.bottomsheet.FilterBottomSheet;
 import cse.ssuroom.databinding.FragmentMapBinding;
@@ -42,7 +74,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private String mParam2;
 
     public MapFragment() {
-        // Required empty public constructor
+
     }
 
     /**
@@ -85,6 +117,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         // Inflate the layout for this fragment
         binding = FragmentMapBinding.inflate(inflater, container, false);
 
@@ -93,7 +126,76 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             new FilterBottomSheet().show(getChildFragmentManager(), "filter");
         });
 
+        binding.ARBtn.setOnClickListener(view -> {
+            if(isARCoreSupportedAndUpToDate()) {
+                startActivity(new Intent(getActivity(), ArActivity.class));
+            }
+        });
+
+        maybeEnableArButton();
+
         return binding.getRoot();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
+
+    public void maybeEnableArButton() {
+        ArCoreApk.getInstance().checkAvailabilityAsync(getContext(), availability -> {
+            if (availability.isSupported()) {
+                binding.ARBtn.setVisibility(View.VISIBLE);
+                binding.ARBtn.setEnabled(true);
+            } else { // The device is unsupported or unknown.
+                binding.ARBtn.setVisibility(View.INVISIBLE);
+                binding.ARBtn.setEnabled(false);
+            }
+        });
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
+    // Verify that ARCore is installed and using the current version.
+    private boolean isARCoreSupportedAndUpToDate() {
+        ArCoreApk.Availability availability = ArCoreApk.getInstance().checkAvailability(getContext());
+        switch (availability) {
+            case SUPPORTED_INSTALLED:
+                return true;
+
+            case SUPPORTED_APK_TOO_OLD:
+            case SUPPORTED_NOT_INSTALLED:
+                try {
+                    // Request ARCore installation or update if needed.
+                    ArCoreApk.InstallStatus installStatus = ArCoreApk.getInstance().requestInstall(getActivity(), true);
+                    switch (installStatus) {
+                        case INSTALL_REQUESTED:
+                            Log.i("[AR]", "ARCore installation requested.");
+                            return false;
+                        case INSTALLED:
+                            return true;
+                    }
+                } catch (UnavailableException e) {
+                    Log.e("[AR]", "ARCore not installed", e);
+                }
+                return false;
+
+            case UNSUPPORTED_DEVICE_NOT_CAPABLE:
+                // This device is not supported for AR.
+                return false;
+
+            case UNKNOWN_CHECKING:
+                // ARCore is checking the availability with a remote query.
+                // This function should be called again after waiting 200 ms to determine the query result.
+            case UNKNOWN_ERROR:
+            case UNKNOWN_TIMED_OUT:
+                // There was an error checking for AR availability. This may be due to the device being offline.
+                // Handle the error appropriately.
+        }
+        return false;
     }
 
     @Override
@@ -101,7 +203,6 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         naverMap.setCameraPosition(new CameraPosition(new LatLng(37.4959, 126.9577), 15));
         naverMap.setLocationSource(locationSource);
         UiSettings us = naverMap.getUiSettings();
-
         us.setLocationButtonEnabled(true);
     }
 
