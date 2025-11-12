@@ -9,6 +9,8 @@ import java.util.List;
 public class LeaseTransferRepository {
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+    private static final String TAG = "LeaseRepo";
+
 
     // property id 자동 생성
     public void saveLeaseTransferAutoId(LeaseTransfer lease, OnPropertyIdGenerated listener) {
