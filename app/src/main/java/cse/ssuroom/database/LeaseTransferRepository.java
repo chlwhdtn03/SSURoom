@@ -1,99 +1,20 @@
 package cse.ssuroom.database;
 
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
+/**
+ * 양도 매물(LeaseTransfer)에 대한 데이터베이스 처리를 담당하는 클래스.
+ * 공통 로직은 PropertyRepository로부터 상속받습니다.
+ */
+public class LeaseTransferRepository extends PropertyRepository<LeaseTransfer> {
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class LeaseTransferRepository {
-    private FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-    private static final String TAG = "LeaseRepo";
-
-
-    // property id 자동 생성
-    public void saveLeaseTransferAutoId(LeaseTransfer lease, OnPropertyIdGenerated listener) {
-        db.collection("lease_transfers")
-                .add(lease)
-                .addOnSuccessListener(docRef -> listener.onGenerated(docRef.getId()))
-                .addOnFailureListener(e -> listener.onGenerated(null));
+    /**
+     * 부모 클래스인 PropertyRepository의 생성자를 호출합니다.
+     * Firestore 컬렉션 이름, 클래스 타입, 그리고 로그 태그를 전달합니다.
+     */
+    public LeaseTransferRepository() {
+        super("lease_transfers", LeaseTransfer.class, "LeaseTransferRepo");
     }
 
-    // 특정 매물 조회
-    public void getLeaseTransfer(String propertyId, OnLeaseTransferLoaded listener) {
-        db.collection("lease_transfers")
-                .document(propertyId)
-                .get()
-                .addOnSuccessListener(docSnap -> {
-                    LeaseTransfer lease = docSnap.toObject(LeaseTransfer.class);
-                    listener.onLoaded(lease);
-                });
-    }
+    // LeaseTransfer에만 필요한 특별한 데이터베이스 쿼리가 있다면 여기에 추가할 수 있습니다.
+    // 예를 들어, "특정 가격대 이상의 양도 매물만 검색" 같은 기능입니다.
 
-
-    // 전체 매물 조회
-    public void getAllLeases(OnLeasesLoaded listener) {
-        db.collection("lease_transfers")
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    List<LeaseTransfer> leases = new ArrayList<>();
-                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        leases.add(doc.toObject(LeaseTransfer.class));
-                    }
-                    listener.onLoaded(leases);
-                });
-    }
-
-    // 조건 검색(필터때 사용하면 좋을듯) 지금은 host id로만 되어있음
-    public void getLeasesByHost(String hostId, OnLeasesLoaded listener) {
-        db.collection("lease_transfers")
-                .whereEqualTo("hostId", hostId)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    List<LeaseTransfer> leases = new ArrayList<>();
-                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        leases.add(doc.toObject(LeaseTransfer.class));
-                    }
-                    listener.onLoaded(leases);
-                });
-    }
-    // 업데이트
-    public void updateLeaseTransfer(String propertyId, LeaseTransfer updatedLease, OnOperationComplete listener) {
-        db.collection("lease_transfers")
-                .document(propertyId)
-                .set(updatedLease)
-                .addOnSuccessListener(aVoid -> listener.onComplete(true))
-                .addOnFailureListener(e -> listener.onComplete(false));
-    }
-    // 삭제
-    public void deleteLeaseTransfer(String propertyId, OnOperationComplete listener) {
-        db.collection("lease_transfers")
-                .document(propertyId)
-                .delete()
-                .addOnSuccessListener(aVoid -> listener.onComplete(true))
-                .addOnFailureListener(e -> listener.onComplete(false));
-    }
-
-
-
-
-
-
-    // 콜백 인터페이스
-    public interface OnLeaseTransferLoaded {
-        void onLoaded(LeaseTransfer lease);
-    }
-
-    public interface OnPropertyIdGenerated {
-        void onGenerated(String propertyId);
-    }
-
-    public interface OnLeasesLoaded {
-        void onLoaded(List<LeaseTransfer> leases);
-    }
-
-    public interface OnOperationComplete {
-        void onComplete(boolean success);
-    }
 }

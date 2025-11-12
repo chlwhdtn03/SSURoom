@@ -1,206 +1,34 @@
 package cse.ssuroom.database;
 
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+/**
+ * 양도 매물 정보를 담는 클래스.
+ * Property 클래스를 상속받아 공통 속성을 물려받습니다.
+ */
+public class LeaseTransfer extends Property {
 
-public class LeaseTransfer {
-    public LeaseTransfer(){};
+    // 양도 매물에만 필요한 필드가 있다면 여기에 추가합니다.
 
-    private String title;
-    private String description;
-    private String roomType;
-    private String hostId;
-    private int floor;
-    private double area;
-    private Date createdAt;
-
-    private HashMap<String, Object> details;
-    private HashMap<String, Object> pricing;
-    private HashMap<String, Object> amenities;
-    private HashMap<String, Object> availability;
-    private HashMap<String, Object> scores;
-    private HashMap<String, Object> location;
-    private List<String> photos;
-
-    public String getDescription() {
-        return description;
-    }
-    public void setDescription(String description) {
-        this.description = description;
-    }
-    public String getTitle() {
-        return title;
-    }
-    public void setTitle(String title) {
-        this.title = title;
-    }
-    public String getRoomType() {
-        return roomType;
-    }
-    public void setRoomType(String roomType) {
-        this.roomType = roomType;
-    }
-    public String getHostId() {
-        return hostId;
-    }
-    public void setHostId(String hostId) {
-        this.hostId = hostId;
-    }
-    public double getArea() {
-        return area;
-    }
-    public void setArea(double area) {
-        this.area = area;
-    }
-    public int getFloor() {
-        return floor;
-    }
-    public void setFloor(int floor) {
-        this.floor = floor;
-    }
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
-    public HashMap<String, Object> getPricing() {
-        return pricing;
-    }
-    public void setPricing(HashMap<String, Object> pricing) {
-        this.pricing = pricing;
-    }
-    public HashMap<String, Object> getDetails() {
-        return details;
-    }
-    public void setDetails(HashMap<String, Object> details) {
-        this.details = details;
-    }
-    public HashMap<String, Object> getAmenities() {
-        return amenities;
-    }
-    public void setAmenities(HashMap<String, Object> amenities) {
-        this.amenities = amenities;
-    }
-    public HashMap<String, Object> getAvailability() {
-        return availability;
-    }
-    public void setAvailability(HashMap<String, Object> availability) {
-        this.availability = availability;
-    }
-    public HashMap<String, Object> getScores() {
-        return scores;
-    }
-    public void setScores(HashMap<String, Object> scores) {
-        this.scores = scores;
-    }
-    public HashMap<String, Object> getLocation() {
-        return location;
-    }
-    public void setLocation(HashMap<String, Object> location) {
-        this.location = location;
-    }
-    public List<String> getPhotos() {
-        return photos;
-    }
-    public void setPhotos(List<String> photos) {
-        this.photos = photos;
+    public LeaseTransfer() {
+        super();
     }
 
-    public static class Builder {
-        private String title;
-        private String description;
-        private String roomType;
-        private String hostId;
-        private int floor;
-        private double area;
-        private Date createdAt;
+    /**
+     * LeaseTransfer 객체를 생성하는 빌더 클래스.
+     * 부모 클래스인 Property.Builder를 상속받아 공통 빌더 로직을 재사용합니다.
+     */
+    public static class Builder extends Property.Builder<LeaseTransfer, Builder> {
 
-        private HashMap<String, Object> details = new HashMap<>();
-        private HashMap<String, Object> pricing = new HashMap<>();
-        private HashMap<String, Object> amenities = new HashMap<>();
-        private HashMap<String, Object> availability = new HashMap<>();
-        private HashMap<String, Object> scores = new HashMap<>();
-        private HashMap<String, Object> location = new HashMap<>();
+        // LeaseTransfer.Builder에만 필요한 추가적인 setter가 있다면 여기에 추가합니다.
 
-        private List<String> photos;
-
-        public Builder setTitle(String title) {
-            this.title = title;
-            return this; }
-        public Builder setDescription(String description) {
-            this.description = description;
-            return this; }
-        public Builder setRoomType(String roomType) {
-            this.roomType = roomType;
-            return this; }
-        public Builder setHostId(String hostId) {
-            this.hostId = hostId;
-            return this; }
-        public Builder setFloor(int floor) {
-            this.floor = floor;
-            return this; }
-        public Builder setArea(double area) {
-            this.area = area;
-            return this; }
-        public Builder setCreatedAt(Date createdAt) {
-            this.createdAt = createdAt;
-            return this; }
-
-        public Builder setDetails(HashMap<String,Object> details) {
-            this.details = details;
-            return this; }
-        public Builder setPricing(HashMap<String,Object> pricing) {
-            this.pricing = pricing;
-            return this; }
-        public Builder setAmenities(HashMap<String,Object> amenities) {
-            this.amenities = amenities;
-            return this; }
-        public Builder setAvailability(HashMap<String,Object> availability) {
-            this.availability = availability;
-            return this; }
-        public Builder setScores(HashMap<String,Object> scores) {
-            this.scores = scores;
-            return this; }
-        public Builder setLocation(HashMap<String,Object> location) {
-            this.location = location;
-            return this; }
-
-        public Builder setPhotos(List<String> photos) {
-            this.photos = photos;
-            return this; }
-
+        @Override
         public LeaseTransfer build() {
             LeaseTransfer lease = new LeaseTransfer();
-            lease.title = this.title;
-            lease.description = this.description;
-            lease.roomType = this.roomType;
-            lease.hostId = this.hostId;
-            lease.floor = this.floor;
-            lease.area = this.area;
-            lease.createdAt = this.createdAt;
+            // 부모 빌더의 build() 메소드를 호출하여 공통 속성을 설정합니다.
+            super.build(lease);
 
-            lease.details = this.details;
-            lease.pricing = this.pricing;
-            lease.amenities = this.amenities;
-            lease.availability = this.availability;
-            lease.scores = this.scores;
-            lease.location = this.location;
-
-            lease.photos = this.photos;
+            // 자식 클래스 고유의 속성을 설정합니다.
 
             return lease;
         }
     }
-
-
-
-
-
-
-
-
 }
