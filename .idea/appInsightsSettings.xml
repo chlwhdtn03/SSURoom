@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="cse.ssuroom" />
-                  <option name="mobileSdkAppId" value="1:720669497513:android:bd72c9f2a5bfaca77171b8" />
-                  <option name="projectId" value="ssuroom-daad6" />
-                  <option name="projectNumber" value="720669497513" />
+                  <option name="appId" value="PLACEHOLDER" />
+                  <option name="mobileSdkAppId" value="" />
+                  <option name="projectId" value="" />
+                  <option name="projectNumber" value="" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

@@ -253,6 +253,7 @@
                 android:padding="8dp"
                 android:drawableEnd="@android:drawable/ic_media_play"/>
             <TextView
+                android:id="@+id/btn_logout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="로그아웃"

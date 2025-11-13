@@ -84,8 +84,8 @@ public class LoginFragment extends Fragment {
 
 
     private void loginUser(){
-        String email = binding.etEmail.getText().toString();
-        String password = binding.etPassword.getText().toString();
+        String email = binding.etEmail.getText().toString().trim();
+        String password = binding.etPassword.getText().toString().trim();
 
         if(email.isEmpty() || password.isEmpty()){
             Toast.makeText(getContext(), "아이디와 비밀번호를 입력해주세요", Toast.LENGTH_SHORT).show();
