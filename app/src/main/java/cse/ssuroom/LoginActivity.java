@@ -8,6 +8,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import cse.ssuroom.database.LeaseTransfer;
+import cse.ssuroom.database.LeaseTransferRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -43,6 +45,13 @@ public class LoginActivity extends AppCompatActivity {
             // 사용자가 이미 로그인되어 있으면 MainActivity로 즉시 이동
             goToMainActivity();
         }
+         // Testing
+//        new LeaseTransferRepository().getAllLeases(list -> {
+//            System.out.println("List size: " + list.size());
+//            list.forEach(System.out::println);
+//        });
+
+
         // 로그인되어 있지 않으면 LoginFragment 그대로
     }
 
