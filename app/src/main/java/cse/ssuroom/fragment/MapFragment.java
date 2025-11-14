@@ -20,6 +20,7 @@ import com.naver.maps.map.util.FusedLocationSource;
 
 import cse.ssuroom.R;
 import cse.ssuroom.bottomsheet.FilterBottomSheet;
+import cse.ssuroom.bottomsheet.UploadPropertyBottomSheet;
 import cse.ssuroom.databinding.FragmentMapBinding;
 
 /**
@@ -91,6 +92,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         binding.filterBtn.setOnClickListener(view -> {
             new FilterBottomSheet().show(getChildFragmentManager(), "filter");
+        });
+
+        binding.addBtn.setOnClickListener(view ->{
+            new UploadPropertyBottomSheet().show(getChildFragmentManager(), "add");
+
         });
 
         return binding.getRoot();

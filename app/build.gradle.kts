@@ -52,6 +52,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+    implementation("androidx.cardview:cardview:1.0.0")
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
