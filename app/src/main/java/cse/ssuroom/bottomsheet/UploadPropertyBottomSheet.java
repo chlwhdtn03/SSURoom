@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import cse.ssuroom.R;
-import cse.ssuroom.fragment.ImageUploadAdapter;
+import cse.ssuroom.adapter.ImageUploadAdapter;
 import cse.ssuroom.database.LeaseTransfer;
 import cse.ssuroom.database.LeaseTransferRepository;
 import cse.ssuroom.database.ShortTerm;

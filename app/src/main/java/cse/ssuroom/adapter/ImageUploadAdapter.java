@@ -1,4 +1,4 @@
-package cse.ssuroom.fragment;
+package cse.ssuroom.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
