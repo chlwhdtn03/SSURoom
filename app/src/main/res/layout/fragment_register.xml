@@ -30,26 +30,15 @@
         android:hint="@string/name"
         android:inputType="text" />
 
-    <LinearLayout
+
+
+    <EditText
+        android:id="@+id/et_email"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="8dp">
+        android:hint="@string/email"
+        android:inputType="textEmailAddress" />
 
-        <EditText
-            android:id="@+id/et_email"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="@string/email"
-            android:inputType="textEmailAddress" />
-
-        <Button
-            android:id="@+id/btn_check_duplicate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/check" />
-    </LinearLayout>
 
     <EditText
         android:id="@+id/et_password"

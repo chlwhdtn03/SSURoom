@@ -1,55 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:padding="16dp">
+    android:layout_width="match_parent"    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:gravity="center_vertical">
 
     <ImageView
-        android:id="@+id/profile_image"
+        android:id="@+id/iv_profile"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:src="@mipmap/ic_launcher_round"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        tools:src="@tools:sample/avatars"/>
 
-    <TextView
-        android:id="@+id/user_name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:text="김철수"
-        android:textStyle="bold"
-        app:layout_constraintStart_toEndOf="@id/profile_image"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/last_message"
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:text="네, 이번 주말에 방문 가능하신가요?"
-        app:layout_constraintStart_toEndOf="@id/profile_image"
-        app:layout_constraintTop_toBottomOf="@id/user_name"
-        app:layout_constraintEnd_toStartOf="@+id/room_image"/>
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="16dp">
+
+        <TextView
+            android:id="@+id/tv_room_name_opponent_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            tools:text="매물 제목(상대방 이름)"/>
+
+        <TextView
+            android:id="@+id/tv_last_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            tools:text="마지막으로 나눈 대화 내용이 여기에 표시됩니다."/>
+    </LinearLayout>
 
     <TextView
-        android:id="@+id/timestamp"
+        android:id="@+id/tv_last_timestamp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="11시간 전"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:textSize="12sp"
+        tools:text="오후 3:45"/>
 
-    <ImageView
-        android:id="@+id/room_image"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:src="@mipmap/ic_launcher"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/timestamp"
-        app:layout_constraintBottom_toBottomOf="parent"/>
-
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

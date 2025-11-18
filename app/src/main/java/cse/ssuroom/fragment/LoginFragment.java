@@ -36,15 +36,20 @@ public class LoginFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentLoginBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
         mAuth = FirebaseAuth.getInstance();
 
-        gotoRegisterLink(); // 파란색 글씨로 회원가입 안했으면 바로 회원가입 할 수 있게 연결하는 함수
+        gotoRegisterLink(); // 파란색 글씨로 회원가입 안했으면 바로 회원가입 할 수 있게 연결 메서드
 
         binding.btnLogin.setOnClickListener(v -> {
             loginUser();
         });
-
-        return binding.getRoot();
     }
 
 
@@ -97,7 +102,6 @@ public class LoginFragment extends Fragment {
                     if (task.isSuccessful()) {
                         Log.d("LoginFragment", "signInWithEmail:success");
                         Toast.makeText(getContext(), "로그인 성공", Toast.LENGTH_SHORT).show();
-                        // TODO : 여기서 원하는 유저 정보 빼올 수 있음. 아니면 여기서 유저 데이터를 데이터
                         gotoMainActivity();
                     }
                     else{
@@ -108,17 +112,16 @@ public class LoginFragment extends Fragment {
                 });
     }
     private void gotoMainActivity(){
-        Intent intent = new Intent(getActivity(), MainActivity.class);
-        //MainActivity 이외의 다른 모든 액티비티를 스택에서 제거하는 코드
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
-        //현재 LoginActivity를 종료
+        // Main 액비를 실행하는데 clear task 그 전 스택은 모두 지우고, New task 마치 앱의 처음 화면인 것 처럼 실행
+        startActivity(new Intent(getActivity(), MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK));
+        // 현재 액비인 LoginActivity를 종료
         if(getActivity() != null)
             getActivity().finish();
     }
 
 
-    // 메모리 누수 방지 코드라는데 모르겠음 ?!?!?!?
+    // 메모리 누수 방지 코드?!?!?!?
     @Override
     public void onDestroyView() {
         super.onDestroyView();
