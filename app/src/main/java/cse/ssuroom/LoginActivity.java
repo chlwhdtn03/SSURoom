@@ -2,6 +2,7 @@ package cse.ssuroom;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,6 +14,7 @@ import cse.ssuroom.database.LeaseTransferRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import cse.ssuroom.database.ShortTermRepository;
 import cse.ssuroom.fragment.LoginFragment;
 
 public class LoginActivity extends AppCompatActivity {
