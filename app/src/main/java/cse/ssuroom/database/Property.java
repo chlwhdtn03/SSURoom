@@ -9,6 +9,9 @@ import java.util.List;
  */
 public class Property {
 
+    // ⭐ 문서 ID 필드 추가
+    private String propertyId;
+
     // --- 기본 정보 ---
     private String title;
     private String description;
@@ -40,9 +43,9 @@ public class Property {
      * 매물을 등록할 때 필요한 모든 정보를 받는 생성자입니다.
      */
     public Property(String title, String description, String hostId, List<String> photos,
-                    String roomType, int floor, double area, 
+                    String roomType, int floor, double area,
                     Date moveInDate, Date moveOutDate,
-                    HashMap<String, Object> pricing, HashMap<String, Object> location, 
+                    HashMap<String, Object> pricing, HashMap<String, Object> location,
                     HashMap<String, Object> amenities, HashMap<String, Object> scores) {
         this.title = title;
         this.description = description;
@@ -61,6 +64,15 @@ public class Property {
     }
 
     // --- Getters and Setters ---
+
+    // ⭐ ID getter/setter 추가
+    public String getPropertyId() {
+        return propertyId;
+    }
+
+    public void setPropertyId(String id) {
+        this.propertyId = id;
+    }
 
     public String getTitle() {
         return title;

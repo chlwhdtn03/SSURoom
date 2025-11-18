@@ -10,6 +10,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -21,6 +22,7 @@ import java.util.Locale;
 
 import cse.ssuroom.R;
 import cse.ssuroom.database.Property;
+import cse.ssuroom.fragment.RoomDetailFragment;
 
 public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapter.PropertyViewHolder> {
 
@@ -135,10 +137,12 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
                 Toast.makeText(context, "지도보기 기능 준비중", Toast.LENGTH_SHORT).show();
             });
 
-            // 아이템 전체 클릭 (상세 페이지로 이동)
+            // ⭐ 아이템 전체 클릭 - 상세 화면으로 이동
             itemView.setOnClickListener(v -> {
-                Toast.makeText(context, property.getTitle() + " 상세보기", Toast.LENGTH_SHORT).show();
-                // TODO: 상세 페이지로 이동
+                RoomDetailFragment fragment = RoomDetailFragment.newInstance(property.getPropertyId());
+
+                // ⭐ BottomSheet로 표시
+                fragment.show(((AppCompatActivity) context).getSupportFragmentManager(), "RoomDetail");
             });
         }
 
