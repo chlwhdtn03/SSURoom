@@ -323,9 +323,9 @@ public class PropertyUploadFragment extends Fragment {
     private HashMap<String, Object> createDefaultLocation() {
         HashMap<String, Object> location = new HashMap<>();
         location.put("address", "서울시 동작구 상도동");
-        location.put("latitude", 37.5);
-        location.put("longitude", 127.0);
-        location.put("distanceToSchool", 500); // 학교까지 거리(m)
+        location.put("latitude", 0);
+        location.put("longitude", 0);
+        location.put("distanceToSchool", 0); // 학교까지 거리(m)
         return location;
     }
 
