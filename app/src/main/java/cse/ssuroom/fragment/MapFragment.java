@@ -1,21 +1,6 @@
 package cse.ssuroom.fragment;
 
-import android.Manifest;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.CaptureRequest;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Looper;
-import android.util.Log;
-import android.view.Surface;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -52,6 +37,7 @@ import java.util.List;
 import cse.ssuroom.ArActivity;
 import cse.ssuroom.R;
 import cse.ssuroom.bottomsheet.FilterBottomSheet;
+import cse.ssuroom.bottomsheet.UploadPropertyBottomSheet;
 import cse.ssuroom.databinding.FragmentMapBinding;
 
 /**
@@ -74,7 +60,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private String mParam2;
 
     public MapFragment() {
-
+        // Required empty public constructor
     }
 
     /**
@@ -124,6 +110,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         binding.filterBtn.setOnClickListener(view -> {
             new FilterBottomSheet().show(getChildFragmentManager(), "filter");
+        });
+
+        binding.addBtn.setOnClickListener(view ->{
+            new UploadPropertyBottomSheet().show(getChildFragmentManager(), "add");
+
         });
 
         binding.ARBtn.setOnClickListener(view -> {

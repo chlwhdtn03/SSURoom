@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import cse.ssuroom.R;
+import cse.ssuroom.adapter.ChatAdapter;
 
 public class ChatFragment extends Fragment implements ChatAdapter.OnChatItemClickListener {
 

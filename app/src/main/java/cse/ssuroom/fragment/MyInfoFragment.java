@@ -139,7 +139,7 @@ public class MyInfoFragment extends Fragment {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) return;
 
-        // 업로드할 파일 경로 지정: "profile_images/{사용자UID}.jpg"
+
         StorageReference profileImageRef = storageRef.child("profile_images/" + currentUser.getUid() + ".jpg");
 
         // 파일 업로드

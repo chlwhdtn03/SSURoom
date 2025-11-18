@@ -1,8 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Default Colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- Existing Colors from Project -->
     <color name="blue">#2196F3</color>
     <color name="red">#FF0000</color>
     <color name="purple"></color>
+
+    <!-- UI Component Colors for Upload Screen -->
+    <color name="ssu_green_primary">#00C73C</color>
+    <color name="ssu_green_background">#E8F9ED</color>
+    <color name="ssu_blue_primary">#4A90E2</color>
+    <color name="ssu_blue_background">#E3F2FD</color>
+    <color name="ssu_grey_divider">#E0E0E0</color>
+    <color name="ssu_grey_background">#F5F5F5</color>
 </resources>
