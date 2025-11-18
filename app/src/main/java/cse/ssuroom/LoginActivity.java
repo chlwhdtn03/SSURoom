@@ -45,23 +45,14 @@ public class LoginActivity extends AppCompatActivity {
             // 사용자가 이미 로그인되어 있으면 MainActivity로 즉시 이동
             goToMainActivity();
         }
-         // Testing
-//        new LeaseTransferRepository().getAllLeases(list -> {
-//            System.out.println("List size: " + list.size());
-//            list.forEach(System.out::println);
-//        });
-
-
         // 로그인되어 있지 않으면 LoginFragment 그대로
     }
 
 
     //MainActivity로 이동하고 현재 액티비티를 종료하는 메서드
     private void goToMainActivity() {
-        Intent intent = new Intent(this, MainActivity.class);
-        // 뒤로가기 버튼을 눌렀을 때 로그인 화면으로 돌아오지 않도록 이전의 모든 액티비티 스택을 지우기
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
+        startActivity(new Intent(this, MainActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK));
         finish();
     }
 }

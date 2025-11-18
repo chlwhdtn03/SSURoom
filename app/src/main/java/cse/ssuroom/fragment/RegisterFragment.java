@@ -32,8 +32,6 @@ public class RegisterFragment extends Fragment {
     private FragmentRegisterBinding binding;
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
-    private boolean isEmailChecked = false;
-    private String checkedEmail = "";
 
 
 
@@ -41,47 +39,21 @@ public class RegisterFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         binding = FragmentRegisterBinding.inflate(inflater, container, false);
+        return binding.getRoot();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-
         gotoLoginLink(); // 파란색 글씨로 이미 회원가입 했으면 바로 로그인 화면으로 이동
-
-        binding.btnCheckDuplicate.setOnClickListener(v -> {
-            String email = binding.etEmail.getText().toString().trim();
-            if (email.isEmpty()) {
-                Toast.makeText(getContext(), "이메일을 입력해주세요.", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            checkEmailDuplicate(email);
-        });
-
-        // 이메일 입력창에 텍스트 변경 감지하지 기능
-        binding.etEmail.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // 텍스트 변경 전
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // 텍스트가 변경될 때마다 isEmailChecked 상태를 초기화하고 버튼 상태를 되돌림
-                isEmailChecked = false;
-                binding.btnCheckDuplicate.setText(getString(R.string.check));
-                binding.btnCheckDuplicate.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.blue));
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                // 텍스트 변경 후
-            }
-        });
 
         binding.btnRegister.setOnClickListener(v -> {
             createAccount();
         });
-
-        return binding.getRoot();
     }
 
     private void gotoLoginLink(){
@@ -116,53 +88,11 @@ public class RegisterFragment extends Fragment {
         binding.tvLogin.setMovementMethod(LinkMovementMethod.getInstance());
     }
 
-
-    private void checkEmailDuplicate(String email) {
-        binding.btnCheckDuplicate.setEnabled(false);
-
-        mAuth.fetchSignInMethodsForEmail(email)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        boolean isNewUser = task.getResult().getSignInMethods().isEmpty();
-                        if (isNewUser) {
-                            isEmailChecked = true;
-                            checkedEmail = email;
-                            Toast.makeText(getContext(), "사용 가능한 이메일입니다.", Toast.LENGTH_SHORT).show();
-                            binding.btnCheckDuplicate.setText(getString(R.string.email_available));
-                            binding.btnCheckDuplicate.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.blue));
-                        } else {
-                            isEmailChecked = false;
-                            Toast.makeText(getContext(), "이미 사용 중인 이메일입니다.", Toast.LENGTH_SHORT).show();
-                            binding.btnCheckDuplicate.setText(getString(R.string.email_unavailable));
-                            binding.btnCheckDuplicate.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.red));
-                        }
-                    } else {
-                        isEmailChecked = false;
-                        String errorMessage = task.getException() != null ? task.getException().getMessage() : "오류 발생";
-                        Toast.makeText(getContext(), "이메일 확인 중 오류 발생: " + errorMessage, Toast.LENGTH_SHORT).show();
-                    }
-                    binding.btnCheckDuplicate.setEnabled(true);
-                });
-    }
-
-
     private void createAccount(){
         String name = binding.etName.getText().toString().trim();
         String email = binding.etEmail.getText().toString().trim();
         String password = binding.etPassword.getText().toString().trim();
         String confirmPassword = binding.etConfirmPassword.getText().toString().trim();
-
-        // 회원가입 전, 중복 확인을 통과했는지 검사
-        if (!isEmailChecked) {
-            Toast.makeText(getContext(), "이메일 중복 확인을 먼저 진행해주세요.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // 중복 확인 후 이메일을 수정했는지 검사
-        if (!checkedEmail.equals(email)) {
-            Toast.makeText(getContext(), "이메일이 변경되었습니다. 다시 중복 확인을 해주세요.", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
         // 조건에 부합하는 지 검사하는 로직
         if(name.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()){
@@ -211,13 +141,13 @@ public class RegisterFragment extends Fragment {
                 .addOnSuccessListener(aVoid -> {
                     Log.d("RegisterFragment","User saved to Firestore: " + user.getUid());
                     Toast.makeText(getContext(), "회원가입 성공", Toast.LENGTH_SHORT).show();
-                    getParentFragmentManager().popBackStack(); //다시 로그인 화면으로 이동.
+                    getParentFragmentManager().popBackStack(); // 다시 로그인 화면으로 이동.
                 })
                 .addOnFailureListener(e -> {
                     Log.e("RegisterFragment", "Error saving user to Firestore", e);
                     // TODO : 회원가입은 되었는데, FireStore에 유저 정보가 저장되지 않았을 때의 처리 어떻게 하죠 ㅠㅜ
                     Toast.makeText(getContext(), "회원가입 실패: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    getParentFragmentManager().popBackStack(); //다시 로그인 화면으로 이동.
+                    getParentFragmentManager().popBackStack(); // 다시 로그인 화면으로 이동.
                 });
 
     }

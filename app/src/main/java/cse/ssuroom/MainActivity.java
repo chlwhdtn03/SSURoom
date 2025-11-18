@@ -34,9 +34,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
 
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -47,11 +46,11 @@ public class MainActivity extends AppCompatActivity {
 
         fragmentManager.beginTransaction().add(R.id.screen, myInfoFragment, "myInfo").hide(myInfoFragment).commit();
         fragmentManager.beginTransaction().add(R.id.screen, favorFragment, "favor").hide(favorFragment).commit();
-        fragmentManager.beginTransaction().add(R.id.screen, mapFragment, "map").commit();
+        fragmentManager.beginTransaction().add(R.id.screen, mapFragment, "map").hide(mapFragment).commit();
+        fragmentManager.beginTransaction().add(R.id.screen, chatFragment, "chat").hide(chatFragment).commit();
+        fragmentManager.beginTransaction().add(R.id.screen, roomlistFragment, "roomlist").commit();
 
 
-        // Set initial fragment
-        changeFragment(roomlistFragment);
 
         binding.bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
