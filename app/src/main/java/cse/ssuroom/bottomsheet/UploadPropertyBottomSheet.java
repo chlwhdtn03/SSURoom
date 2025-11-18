@@ -297,11 +297,48 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
 
     private void saveShortTermProperty(String hostId, String title, String description, String location) {
         String weeklyPrice = binding.etWeeklyPrice.getText().toString().trim();
+        String roomType = binding.etRoomType.getText().toString().trim();
+        String areaStr = binding.etArea.getText().toString().trim();
+        String floorStr = binding.etFloor.getText().toString().trim();
 
         if (weeklyPrice.isEmpty()) {
             binding.btnSubmit.setEnabled(true);
             Toast.makeText(requireContext(), "주당 가격을 입력해주세요", Toast.LENGTH_SHORT).show();
             return;
+        }
+
+        // 방 타입 처리
+        if (roomType.isEmpty()) {
+            roomType = "원룸"; // 기본값
+        }
+
+        // 면적 처리
+        double area = 20.0; // 기본값
+        if (!areaStr.isEmpty()) {
+            try {
+                area = Double.parseDouble(areaStr);
+                if (area <= 0) {
+                    binding.btnSubmit.setEnabled(true);
+                    Toast.makeText(requireContext(), "면적은 0보다 커야 합니다", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                binding.btnSubmit.setEnabled(true);
+                Toast.makeText(requireContext(), "올바른 면적을 입력해주세요", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        // 층수 처리
+        int floor = 1; // 기본값
+        if (!floorStr.isEmpty()) {
+            try {
+                floor = Integer.parseInt(floorStr);
+            } catch (NumberFormatException e) {
+                binding.btnSubmit.setEnabled(true);
+                Toast.makeText(requireContext(), "올바른 층수를 입력해주세요", Toast.LENGTH_SHORT).show();
+                return;
+            }
         }
 
         try {
@@ -318,9 +355,9 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
                     description.isEmpty() ? "매물 설명 없음" : description,
                     hostId,
                     uploadedImageUrls,
-                    "원룸",
-                    1,
-                    20.0,
+                    roomType,
+                    floor,
+                    area,
                     new Date(),
                     null,
                     pricing,
@@ -340,11 +377,48 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
     private void saveLeaseTransferProperty(String hostId, String title, String description, String location) {
         String deposit = binding.etDeposit.getText().toString().trim();
         String monthlyRent = binding.etMonthlyRent.getText().toString().trim();
+        String roomType = binding.etRoomType.getText().toString().trim();
+        String areaStr = binding.etArea.getText().toString().trim();
+        String floorStr = binding.etFloor.getText().toString().trim();
 
         if (deposit.isEmpty() || monthlyRent.isEmpty()) {
             binding.btnSubmit.setEnabled(true);
             Toast.makeText(requireContext(), "보증금과 월세를 입력해주세요", Toast.LENGTH_SHORT).show();
             return;
+        }
+
+        // 방 타입 처리
+        if (roomType.isEmpty()) {
+            roomType = "원룸";
+        }
+
+        // 면적 처리
+        double area = 20.0;
+        if (!areaStr.isEmpty()) {
+            try {
+                area = Double.parseDouble(areaStr);
+                if (area <= 0) {
+                    binding.btnSubmit.setEnabled(true);
+                    Toast.makeText(requireContext(), "면적은 0보다 커야 합니다", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                binding.btnSubmit.setEnabled(true);
+                Toast.makeText(requireContext(), "올바른 면적을 입력해주세요", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        // 층수 처리
+        int floor = 1;
+        if (!floorStr.isEmpty()) {
+            try {
+                floor = Integer.parseInt(floorStr);
+            } catch (NumberFormatException e) {
+                binding.btnSubmit.setEnabled(true);
+                Toast.makeText(requireContext(), "올바른 층수를 입력해주세요", Toast.LENGTH_SHORT).show();
+                return;
+            }
         }
 
         try {
@@ -362,9 +436,9 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
                     description.isEmpty() ? "매물 설명 없음" : description,
                     hostId,
                     uploadedImageUrls,
-                    "원룸",
-                    1,
-                    20.0,
+                    roomType,
+                    floor,
+                    area,
                     new Date(),
                     null,
                     pricing,
@@ -406,15 +480,13 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
     private HashMap<String, Object> createLocationFromInput(String locationInput) {
         HashMap<String, Object> location = new HashMap<>();
         if (locationInput.isEmpty()) {
-            // 입력 안 했으면 기본값
             location.put("address", "서울시 동작구 상도동");
         } else {
-            // 입력한 주소 사용
             location.put("address", locationInput);
         }
-        location.put("latitude", 37.5);
-        location.put("longitude", 127.0);
-        location.put("distanceToSchool", 500);
+        location.put("latitude", 0);
+        location.put("longitude", 0);
+        location.put("distanceToSchool", 0);
         return location;
     }
 
