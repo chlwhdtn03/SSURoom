@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 스크롤 가능한 내용 -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingBottom="80dp"> <!-- 하단 버튼 공간 확보 -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- 이미지 슬라이더 -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="400dp">
+
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/viewPagerImages"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"/>
+
+                <!-- 가격 오버레이 -->
+                <TextView
+                    android:id="@+id/tvPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|start"
+                    android:layout_margin="16dp"
+                    android:background="@drawable/bg_price_overlay"
+                    android:padding="8dp"
+                    android:text="80,000원/주"
+                    android:textColor="@android:color/white"
+                    android:textSize="20sp"
+                    android:textStyle="bold"/>
+
+                <!-- 상단 버튼들 -->
+                <ImageButton
+                    android:id="@+id/btnFavorite"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="top|start"
+                    android:layout_margin="16dp"
+                    android:background="@drawable/bg_circle_button"
+                    android:src="@drawable/ic_favor"
+                    android:contentDescription="찜하기"/>
+
+                <ImageButton
+                    android:id="@+id/btnClose"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="16dp"
+                    android:background="@drawable/bg_circle_button"
+                    android:src="@drawable/ic_close"
+                    android:contentDescription="닫기"/>
+
+            </FrameLayout>
+
+            <!-- 상세 정보 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- 단기 임대 배지 -->
+                <TextView
+                    android:id="@+id/tvBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="6dp"
+                    android:text="🏠 단기 임대"
+                    android:textSize="14sp"/>
+
+                <!-- 제목 -->
+                <TextView
+                    android:id="@+id/tvTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="깔끔한 풀옵션 원룸"
+                    android:textColor="@android:color/black"
+                    android:textSize="24sp"
+                    android:textStyle="bold"/>
+
+                <!-- 주소 -->
+                <TextView
+                    android:id="@+id/tvAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="서울특별시 동작구 상도로64길 51"
+                    android:textColor="#666666"
+                    android:textSize="14sp"/>
+
+                <!-- 호스트 정보 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:background="@drawable/bg_host_info"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <ImageView
+                        android:id="@+id/ivHostProfile"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_host_info"/>
+
+                    <TextView
+                        android:id="@+id/tvHostName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:text="김철수"
+                        android:textColor="@android:color/black"
+                        android:textSize="16sp"
+                        android:textStyle="bold"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- 하단 고정 버튼 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnChat"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="16dp"
+        android:backgroundTint="#00C73C"
+        android:padding="16dp"
+        android:text="💬 채팅하기"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:cornerRadius="8dp"/>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -51,7 +51,12 @@ public class PropertyRepository<T extends Property> {
                 .get()
                 .addOnSuccessListener(docSnap -> {
                     if (docSnap.exists()) {
-                        listener.onLoaded(docSnap.toObject(propertyClass));
+                        T property = docSnap.toObject(propertyClass);
+                        // ⭐ 문서 ID 설정
+                        if (property != null) {
+                            property.setPropertyId(docSnap.getId());
+                        }
+                        listener.onLoaded(property);
                     } else {
                         listener.onLoaded(null);
                     }
@@ -69,7 +74,13 @@ public class PropertyRepository<T extends Property> {
                 .addOnSuccessListener(querySnapshot -> {
                     List<T> properties = new ArrayList<>();
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        properties.add(doc.toObject(propertyClass));
+                        T property = doc.toObject(propertyClass);
+
+                        // ⭐ 문서 ID 설정
+                        if (property != null) {
+                            property.setPropertyId(doc.getId());
+                            properties.add(property);
+                        }
                     }
                     listener.onLoaded(properties);
                 })
@@ -87,7 +98,13 @@ public class PropertyRepository<T extends Property> {
                 .addOnSuccessListener(querySnapshot -> {
                     List<T> properties = new ArrayList<>();
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        properties.add(doc.toObject(propertyClass));
+                        T property = doc.toObject(propertyClass);
+
+                        // ⭐ 문서 ID 설정
+                        if (property != null) {
+                            property.setPropertyId(doc.getId());
+                            properties.add(property);
+                        }
                     }
                     listener.onLoaded(properties);
                 })

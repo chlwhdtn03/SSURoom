@@ -1,0 +1,15 @@
+<resources>
+    <!-- 커스텀 다이얼로그 스타일 -->
+    <style name="AppDialogTheme" parent="Theme.MaterialComponents.DayNight.Dialog">
+        <!-- 배경 투명 -->
+        <item name="android:windowBackground">@android:color/transparent</item>
+
+        <!-- 프래그먼트 외부 배경 흐리게(딤) -->
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.6</item>
+
+        <!-- 둥근 팝업을 위해 타이틀바 제거 -->
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">true</item>
+    </style>
+</resources>
