@@ -1,0 +1,290 @@
+package cse.ssuroom.fragment;
+
+import android.os.Bundle;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
+import androidx.viewpager2.widget.ViewPager2;
+
+import com.bumptech.glide.Glide;
+import com.google.android.material.button.MaterialButton;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.List;
+
+import cse.ssuroom.R;
+import cse.ssuroom.adapter.ImageSliderAdapter;
+
+public class RoomDetailFragment extends DialogFragment {   // ⭐ BottomSheet → DialogFragment
+
+    private static final String ARG_ROOM_ID = "ROOM_ID";
+
+    private ViewPager2 viewPagerImages;
+    private TextView tvPrice, tvTitle, tvAddress, tvHostName;
+    private ImageButton btnFavorite, btnClose;
+    private MaterialButton btnChat;
+    private ImageView ivHostProfile;
+
+    private String roomId;
+    private String hostId;
+    private boolean isFavorite = false;
+
+    private FirebaseFirestore db;
+    private FirebaseAuth mAuth;
+
+    public static RoomDetailFragment newInstance(String roomId) {
+        RoomDetailFragment fragment = new RoomDetailFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_ROOM_ID, roomId);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        db = FirebaseFirestore.getInstance();
+        mAuth = FirebaseAuth.getInstance();
+
+        if (getArguments() != null) {
+            roomId = getArguments().getString(ARG_ROOM_ID);
+        }
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+
+        // ⭐ 팝업 배경 dim 적용
+        setStyle(DialogFragment.STYLE_NORMAL, R.style.AppDialogTheme);
+
+        View view = inflater.inflate(R.layout.fragment_property_detail, container, false);
+
+        initViews(view);
+        loadRoomDetails();
+        setupListeners();
+
+        return view;
+    }
+
+    // ⭐ 팝업 사이즈/배경 등 설정
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (getDialog() != null && getDialog().getWindow() != null) {
+
+            // 화면 90% 가로 크기
+            getDialog().getWindow().setLayout(
+                    (int) (getResources().getDisplayMetrics().widthPixels * 0.9),
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+
+            // 배경 둥글게 적용
+            getDialog().getWindow().setBackgroundDrawableResource(R.drawable.bg_round_dialog);
+
+            // 배경 어둡게 (dim)
+            getDialog().getWindow().addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            getDialog().getWindow().setDimAmount(0.4f);
+        }
+    }
+
+
+    private void initViews(View view) {
+        viewPagerImages = view.findViewById(R.id.viewPagerImages);
+        tvPrice = view.findViewById(R.id.tvPrice);
+        tvTitle = view.findViewById(R.id.tvTitle);
+        tvAddress = view.findViewById(R.id.tvAddress);
+        tvHostName = view.findViewById(R.id.tvHostName);
+        btnFavorite = view.findViewById(R.id.btnFavorite);
+        btnClose = view.findViewById(R.id.btnClose);
+        btnChat = view.findViewById(R.id.btnChat);
+        ivHostProfile = view.findViewById(R.id.ivHostProfile);
+    }
+
+    private void loadRoomDetails() {
+
+        db.collection("short_terms").document(roomId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        displayPropertyData(documentSnapshot);
+                    } else {
+                        db.collection("lease_transfers").document(roomId)
+                                .get()
+                                .addOnSuccessListener(doc -> {
+                                    if (doc.exists()) {
+                                        displayPropertyData(doc);
+                                    } else {
+                                        Toast.makeText(getContext(), "매물을 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
+                                        dismiss();
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(), "매물 정보를 불러오는데 실패했습니다.", Toast.LENGTH_SHORT).show();
+                    Log.e("RoomDetail", "Error loading room", e);
+                });
+    }
+
+    private void displayPropertyData(com.google.firebase.firestore.DocumentSnapshot documentSnapshot) {
+        String title = documentSnapshot.getString("title");
+
+        // 주소
+        String address = "";
+        if (documentSnapshot.contains("location")) {
+            Object locationObj = documentSnapshot.get("location");
+            if (locationObj instanceof java.util.Map) {
+                java.util.Map<String, Object> location = (java.util.Map<String, Object>) locationObj;
+                address = (String) location.get("address");
+            }
+        }
+
+        // 가격
+        String priceText = "가격 정보 없음";
+        if (documentSnapshot.contains("pricing")) {
+            Object pricingObj = documentSnapshot.get("pricing");
+            if (pricingObj instanceof java.util.Map) {
+                java.util.Map<String, Object> pricing = (java.util.Map<String, Object>) pricingObj;
+                String type = (String) pricing.get("type");
+
+                if ("short_term".equals(type)) {
+                    Object weeklyPrice = pricing.get("weeklyPrice");
+                    if (weeklyPrice != null)
+                        priceText = String.format("%,d원/주", ((Number) weeklyPrice).longValue());
+
+                } else if ("lease_transfer".equals(type)) {
+                    Object deposit = pricing.get("deposit");
+                    Object monthlyRent = pricing.get("monthlyRent");
+                    if (deposit != null && monthlyRent != null)
+                        priceText = String.format("보증금 %,d만원 / 월세 %,d만원",
+                                ((Number) deposit).longValue(),
+                                ((Number) monthlyRent).longValue());
+                }
+            }
+        }
+
+        hostId = documentSnapshot.getString("hostId");
+
+        tvTitle.setText(title != null ? title : "제목 없음");
+        tvAddress.setText(address != null ? address : "주소 정보 없음");
+        tvPrice.setText(priceText);
+
+        List<String> photos = (List<String>) documentSnapshot.get("photos");
+        if (photos != null && !photos.isEmpty()) {
+            setupImageSlider(photos);
+        }
+
+        if (hostId != null) {
+            loadHostInfo(hostId);
+        }
+
+        checkFavoriteStatus();
+    }
+
+    private void loadHostInfo(String userId) {
+        db.collection("users").document(userId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String name = documentSnapshot.getString("name");
+                        String profileImageUrl = documentSnapshot.getString("profileImageUrl");
+
+                        tvHostName.setText(name != null ? name : "익명");
+
+                        if (profileImageUrl != null && !profileImageUrl.isEmpty()) {
+                            loadProfileImage(profileImageUrl);
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("RoomDetail", "Error loading host info", e);
+                    tvHostName.setText("익명");
+                });
+    }
+
+    private void loadProfileImage(String imageUrl) {
+        Glide.with(this)
+                .load(imageUrl)
+                .circleCrop()
+                .into(ivHostProfile);
+    }
+
+    private void setupImageSlider(List<String> imageUrls) {
+        ImageSliderAdapter adapter = new ImageSliderAdapter(getContext(), imageUrls);
+        viewPagerImages.setAdapter(adapter);
+    }
+
+    private void checkFavoriteStatus() {
+        if (mAuth.getCurrentUser() == null) return;
+
+        String currentUserId = mAuth.getCurrentUser().getUid();
+
+        db.collection("users").document(currentUserId)
+                .collection("favorites")
+                .document(roomId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    isFavorite = documentSnapshot.exists();
+                });
+    }
+
+    private void setupListeners() {
+        btnClose.setOnClickListener(v -> dismiss());
+
+        btnFavorite.setOnClickListener(v -> {
+            if (mAuth.getCurrentUser() == null) {
+                Toast.makeText(getContext(), "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            isFavorite = !isFavorite;
+            saveFavoriteStatus();
+        });
+
+        btnChat.setOnClickListener(v -> {
+            if (mAuth.getCurrentUser() == null) {
+                Toast.makeText(getContext(), "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            Toast.makeText(getContext(), "채팅 기능은 준비중입니다.", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void saveFavoriteStatus() {
+        String currentUserId = mAuth.getCurrentUser().getUid();
+
+        if (isFavorite) {
+            db.collection("users").document(currentUserId)
+                    .collection("favorites").document(roomId)
+                    .set(new HashMap<String, Object>() {{
+                        put("roomId", roomId);
+                        put("timestamp", System.currentTimeMillis());
+                    }})
+                    .addOnSuccessListener(aVoid ->
+                            Toast.makeText(getContext(), "찜 목록에 추가되었습니다.", Toast.LENGTH_SHORT).show()
+                    );
+        } else {
+            db.collection("users").document(currentUserId)
+                    .collection("favorites").document(roomId)
+                    .delete()
+                    .addOnSuccessListener(aVoid ->
+                            Toast.makeText(getContext(), "찜 목록에서 제거되었습니다.", Toast.LENGTH_SHORT).show()
+                    );
+        }
+    }
+}
