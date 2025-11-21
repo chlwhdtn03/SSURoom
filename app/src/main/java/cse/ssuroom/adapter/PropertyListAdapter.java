@@ -1,6 +1,7 @@
 package cse.ssuroom.adapter;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -144,6 +145,7 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
                 // ⭐ BottomSheet로 표시
                 fragment.show(((AppCompatActivity) context).getSupportFragmentManager(), "RoomDetail");
             });
+            Log.d("PropertyAdapter", "Room ID: " + property.getPropertyId());
         }
 
         private String getPriceText(Property property) {

@@ -1,5 +1,7 @@
 package cse.ssuroom.database;
 
+import com.google.firebase.firestore.Exclude;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -10,6 +12,7 @@ import java.util.List;
 public class Property {
 
     // ⭐ 문서 ID 필드 추가
+    @Exclude
     private String propertyId;
 
     // --- 기본 정보 ---
@@ -66,6 +69,7 @@ public class Property {
     // --- Getters and Setters ---
 
     // ⭐ ID getter/setter 추가
+    @Exclude
     public String getPropertyId() {
         return propertyId;
     }
