@@ -25,9 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private final FavorFragment favorFragment = new FavorFragment();
     private final ChatFragment chatFragment = new ChatFragment();
     private final MyInfoFragment myInfoFragment = new MyInfoFragment();
-
-    private Fragment activeFragment = mapFragment;
-
+    private Fragment activeFragment = roomlistFragment;
     private ActivityMainBinding binding;
 
     @Override
@@ -35,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
 
-        ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
@@ -50,19 +48,20 @@ public class MainActivity extends AppCompatActivity {
         fragmentManager.beginTransaction().add(R.id.screen, chatFragment, "chat").hide(chatFragment).commit();
         fragmentManager.beginTransaction().add(R.id.screen, roomlistFragment, "roomlist").commit();
 
-        changeFragment(roomlistFragment);
-
         binding.bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.action_roomlist) {
                 changeFragment(roomlistFragment);
             } else if (itemId == R.id.action_favor) {
                 changeFragment(favorFragment);
-            } else if (itemId == R.id.action_map) {
+            }
+            else if (itemId == R.id.action_map) {
                 changeFragment(mapFragment);
-            } else if (itemId == R.id.action_chat) {
+            }
+            else if (itemId == R.id.action_chat) {
                 changeFragment(chatFragment);
-            } else if (itemId == R.id.action_myinfo) {
+            }
+            else if (itemId == R.id.action_myinfo) {
                 changeFragment(myInfoFragment);
             }
             return true;
@@ -70,6 +69,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void changeFragment(Fragment fragment) {
-        getSupportFragmentManager().beginTransaction().replace(R.id.screen, fragment).commit();
+        // 현재 보였던 frag는 가리고, 새로운 frag는 보이게
+        fragmentManager.beginTransaction().hide(activeFragment).show(fragment).commit();
+        activeFragment = fragment;
     }
+
+    public void setBottomNavigationVisibility(int visibility) {
+        binding.bottomNavigationView.setVisibility(visibility);
+    }
+
 }

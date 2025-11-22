@@ -20,6 +20,7 @@
             android:background="?attr/colorSurface">
 
             <ImageView
+                android:id="@+id/back_button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@drawable/ic_arrow_back" />
@@ -44,6 +45,13 @@
                     android:text="이영희"
                     android:textStyle="bold" />
 
+                <TextView
+                    android:id="@+id/chat_room_id_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    tools:text="DEBUG_CHAT_ROOM_ID" />
+ 
                 <TextView
                     android:id="@+id/room_title_toolbar"
                     android:layout_width="wrap_content"

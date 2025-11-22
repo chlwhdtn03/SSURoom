@@ -1,7 +1,7 @@
 package cse.ssuroom.adapter;
 
 import android.content.Context;
-import android.util.Log;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,29 +16,41 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.imageview.ShapeableImageView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 
 import cse.ssuroom.R;
+import cse.ssuroom.database.LeaseTransfer;
 import cse.ssuroom.database.Property;
+import cse.ssuroom.database.ShortTerm;
 import cse.ssuroom.fragment.RoomDetailFragment;
+import cse.ssuroom.user.User;
 
 public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapter.PropertyViewHolder> {
 
     private final Context context;
     private final List<Property> properties;
+    private final int layoutId;
+    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
-    public PropertyListAdapter(Context context, List<Property> properties) {
+    public PropertyListAdapter(Context context, List<Property> properties, int layoutId) {
         this.context = context;
         this.properties = properties;
+        this.layoutId = layoutId;
     }
 
     @NonNull
     @Override
     public PropertyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_room_list, parent, false);
+        View view = LayoutInflater.from(context).inflate(layoutId, parent, false);
         return new PropertyViewHolder(view);
     }
 
@@ -55,68 +67,42 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
 
     class PropertyViewHolder extends RecyclerView.ViewHolder {
 
+        // Common Views
         private final ShapeableImageView roomImage;
         private final ImageView favoriteIcon;
         private final TextView roomTitle;
-        private final TextView roomScoreLabel;
-        private final TextView roomScore;
-        private final TextView roomLocation;
         private final TextView roomPrice;
-        private final TextView roomDetails;
-        private final Button viewOnMapButton;
+        private TextView roomDetails;
+        private TextView roomLocation;
+        private TextView roomDuration;
+        private TextView roomScore;
+        private Button viewOnMapButton;
+        private TextView propertyTypeBadge;
 
         public PropertyViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            roomImage = itemView.findViewById(R.id.room_image);
             favoriteIcon = itemView.findViewById(R.id.favorite_icon);
             roomTitle = itemView.findViewById(R.id.room_title);
-            roomScoreLabel = itemView.findViewById(R.id.room_score_label);
-            roomScore = itemView.findViewById(R.id.room_score);
-            roomLocation = itemView.findViewById(R.id.room_location);
             roomPrice = itemView.findViewById(R.id.room_price);
-            roomDetails = itemView.findViewById(R.id.room_details);
+            roomImage = itemView.findViewById(R.id.room_image);
+            roomLocation = itemView.findViewById(R.id.room_location);
+            roomScore = itemView.findViewById(R.id.room_score);
             viewOnMapButton = itemView.findViewById(R.id.view_on_map_button);
+
+            if (layoutId == R.layout.item_room_list) {
+                roomDetails = itemView.findViewById(R.id.room_details);
+            } else if (layoutId == R.layout.item_favorite_list) {
+                propertyTypeBadge = itemView.findViewById(R.id.property_type_badge);
+                roomDuration = itemView.findViewById(R.id.room_duration);
+                // TODO : 매물 기간 item_room_list에 없어서 추가해서 일단 여기에 빼둔 거고 추가했으면 else if에서 뺴고 공통으로 넣으면 됨. 구현한 코드도 공통으로 뺴야함. 할때 물어보셈
+            }
         }
 
         public void bind(Property property) {
-            // 제목
             roomTitle.setText(property.getTitle());
-
-            // 위치
-            if (property.getLocation() != null) {
-                String address = (String) property.getLocation().get("address");
-                roomLocation.setText(address != null ? address : "위치 정보 없음");
-            } else {
-                roomLocation.setText("위치 정보 없음");
-            }
-
-            // 가격
-            String priceText = getPriceText(property);
-            roomPrice.setText(priceText);
-
-            // 상세 정보 (방 타입 · 면적 · 층수)
-            String details = String.format("%s · %.0f평 (약 %.0f㎡) · %d층",
-                    property.getRoomType(),
-                    property.getArea() / 3.3,  // ㎡를 평으로 변환
-                    property.getArea(),
-                    property.getFloor());
-            roomDetails.setText(details);
-
-            // 슈방 점수
-            if (property.getScores() != null) {
-                Object overallScore = property.getScores().get("overall");
-                if (overallScore != null) {
-                    double score = ((Number) overallScore).doubleValue();
-                    roomScore.setText(String.format("%.0f", score * 100)); // 0~1 값을 0~100으로 변환
-                } else {
-                    roomScore.setText("0");
-                }
-            } else {
-                roomScore.setText("0");
-            }
-
-            // 이미지 로드
+            roomPrice.setText(getPriceText(property));
+            // 매뮬 이미지 설정
             if (property.getPhotos() != null && !property.getPhotos().isEmpty()) {
                 Glide.with(context)
                         .load(property.getPhotos().get(0))
@@ -127,27 +113,67 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
             } else {
                 roomImage.setImageResource(R.drawable.ic_launcher_background);
             }
+            // 매물 위치 설정
+            if (property.getLocation() != null) {
+                String address = (String) property.getLocation().get("address");
+                roomLocation.setText(address != null ? address : "위치 정보 없음");
+            } else {
+                roomLocation.setText("위치 정보 없음");
+            }
 
-            // 즐겨찾기 아이콘 클릭
-            favoriteIcon.setOnClickListener(v -> {
-                Toast.makeText(context, "즐겨찾기 기능 준비중", Toast.LENGTH_SHORT).show();
-            });
-
-            // 지도보기 버튼 클릭
+            // 슈방 점수 설정
+            if (property.getScores() != null) {
+                Object overallScore = property.getScores().get("overall");
+                if (overallScore != null) {
+                    roomScore.setText(String.format("%.0f", ((Number) overallScore).doubleValue() * 100));
+                } else {
+                    roomScore.setText("0");
+                }
+            } else {
+                roomScore.setText("0");
+            }
+            // 지도보기 버튼 TODO : 구현 필요
             viewOnMapButton.setOnClickListener(v -> {
                 Toast.makeText(context, "지도보기 기능 준비중", Toast.LENGTH_SHORT).show();
             });
-
-            // ⭐ 아이템 전체 클릭 - 상세 화면으로 이동
+            // 즐겨찾기 설정
+            updateFavoriteIcon(property.getPropertyId());
+            favoriteIcon.setOnClickListener(v -> toggleFavorite(property.getPropertyId()));
+            // 매물 선택 시 상세 페이지로 이동
             itemView.setOnClickListener(v -> {
                 RoomDetailFragment fragment = RoomDetailFragment.newInstance(property.getPropertyId());
-
-                // ⭐ BottomSheet로 표시
                 fragment.show(((AppCompatActivity) context).getSupportFragmentManager(), "RoomDetail");
             });
-            Log.d("PropertyAdapter", "Room ID: " + property.getPropertyId());
-        }
 
+            if (layoutId == R.layout.item_room_list) {
+                String details = String.format("%s · %.0f평 (약 %.0f㎡) · %d층",
+                        property.getRoomType(),
+                        property.getArea() / 3.3,
+                        property.getArea(),
+                        property.getFloor());
+                if (roomDetails != null) {
+                    roomDetails.setText(details);
+                }
+
+            } else if (layoutId == R.layout.item_favorite_list) {
+                // 매물 기간 설정
+                if (property.getMoveInDate() != null && property.getMoveOutDate() != null) {
+                    java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy.MM.dd", Locale.KOREA);
+                    String duration = dateFormat.format(property.getMoveInDate()) + " ~ " + dateFormat.format(property.getMoveOutDate());
+                    roomDuration.setText(duration);
+                } else {
+                    roomDuration.setText("기간 정보 없음");
+                }
+                // 단기, 양도 매물 타입 설정
+                if (property instanceof ShortTerm) {
+                    propertyTypeBadge.setText("단기임대");
+                    propertyTypeBadge.getBackground().setTint(Color.parseColor("#5CB85C"));
+                } else if (property instanceof LeaseTransfer) {
+                    propertyTypeBadge.setText("계약양도");
+                    propertyTypeBadge.getBackground().setTint(Color.parseColor("#4285F4"));
+                }
+            }
+        }
         private String getPriceText(Property property) {
             if (property.getPricing() == null) {
                 return "가격 정보 없음";
@@ -166,13 +192,57 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
                 Object monthlyRent = property.getPricing().get("monthlyRent");
 
                 if (deposit != null && monthlyRent != null) {
-                    return String.format("보증금 %s만원 / 월세 %s만원",
+                    return String.format("보증금 %s / 월세 %s",
                             formatter.format(deposit),
                             formatter.format(monthlyRent));
                 }
             }
-
             return "가격 정보 없음";
+        }
+
+        private void toggleFavorite(String propertyId) {
+            if (currentUser == null) {
+                Toast.makeText(context, "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            DocumentReference userRef = db.collection("users").document(currentUser.getUid());
+
+            userRef.get().addOnSuccessListener(documentSnapshot -> {
+                if (!documentSnapshot.exists()) return;
+                User user = documentSnapshot.toObject(User.class);
+                if (user == null || user.getFavorites() == null) return;
+
+                if (user.getFavorites().contains(propertyId)) {
+                    userRef.update("favorites", FieldValue.arrayRemove(propertyId))
+                            .addOnSuccessListener(aVoid -> {
+                                Toast.makeText(context, "즐겨찾기에서 제거했습니다.", Toast.LENGTH_SHORT).show();
+                                favoriteIcon.setImageResource(R.drawable.ic_favor);
+                            });
+                } else {
+                    userRef.update("favorites", FieldValue.arrayUnion(propertyId))
+                            .addOnSuccessListener(aVoid -> {
+                                Toast.makeText(context, "즐겨찾기에 추가했습니다.", Toast.LENGTH_SHORT).show();
+                                favoriteIcon.setImageResource(R.drawable.ic_favor_filled);
+                            });
+                }
+            });
+        }
+        
+        private void updateFavoriteIcon(String propertyId) {
+            if (currentUser == null) {
+                favoriteIcon.setImageResource(R.drawable.ic_favor);
+                return;
+            }
+            db.collection("users").document(currentUser.getUid()).get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (!documentSnapshot.exists()) return;
+                        User user = documentSnapshot.toObject(User.class);
+                        if (user != null && user.getFavorites() != null && user.getFavorites().contains(propertyId)) {
+                            favoriteIcon.setImageResource(R.drawable.ic_favor_filled);
+                        } else {
+                            favoriteIcon.setImageResource(R.drawable.ic_favor);
+                        }
+                    });
         }
     }
 }

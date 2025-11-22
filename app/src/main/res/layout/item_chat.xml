@@ -10,7 +10,7 @@
         android:id="@+id/iv_profile"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        tools:src="@tools:sample/avatars"/>
+        tools:src="@drawable/ic_profile_placeholder"/>
 
     <LinearLayout
         android:layout_width="0dp"

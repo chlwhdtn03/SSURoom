@@ -3,6 +3,7 @@ package cse.ssuroom.database;
 import android.util.Log;
 
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldPath;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -112,6 +113,59 @@ public class PropertyRepository<T extends Property> {
                     Log.e(TAG, "Error finding documents by hostId in " + collectionName, e);
                     listener.onLoaded(new ArrayList<>());
                 });
+    }
+
+    // R: ID 목록으로 여러 매물 조회
+    public void findAllByIds(List<String> propertyIds, OnPropertiesLoaded<T> listener) {
+        if (propertyIds == null || propertyIds.isEmpty()) {
+            listener.onLoaded(new ArrayList<>());
+            return;
+        }
+
+        // Firestore 'whereIn' 쿼리는 한 번에 최대 30개의 ID를 조회할 수 있습니다.
+        // ID 목록을 30개씩 나누어 여러 쿼리를 실행합니다.
+        List<List<String>> chunks = new ArrayList<>();
+        for (int i = 0; i < propertyIds.size(); i = i + 30) {
+            int end = Math.min(propertyIds.size(), i + 30);
+            chunks.add(propertyIds.subList(i, end));
+        }
+
+        List<T> allProperties = new ArrayList<>();
+        // 여러 쿼리가 모두 완료되었는지 추적하기 위한 카운터
+        final int[] tasksCompleted = {0};
+
+        if (chunks.isEmpty()) {
+            listener.onLoaded(new ArrayList<>());
+            return;
+        }
+
+        for (List<String> chunk : chunks) {
+            db.collection(collectionName)
+                    .whereIn(FieldPath.documentId(), chunk) // "propertyId" 필드를 기준으로 검색
+                    .get()
+                    .addOnSuccessListener(querySnapshot -> {
+                        for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                            T property = doc.toObject(propertyClass);
+                            if (property != null) {
+                                property.setPropertyId(doc.getId());
+                                allProperties.add(property);
+                            }
+                        }
+                        // 모든 쿼리가 완료되면 콜백 호출
+                        tasksCompleted[0]++;
+                        if (tasksCompleted[0] == chunks.size()) {
+                            listener.onLoaded(allProperties);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error finding documents by IDs in " + collectionName, e);
+                        // 하나의 쿼리라도 실패하면 현재까지의 결과 또는 빈 리스트 반환
+                        tasksCompleted[0]++;
+                        if (tasksCompleted[0] == chunks.size()) {
+                            listener.onLoaded(allProperties); // Or new ArrayList<>()
+                        }
+                    });
+        }
     }
 
     // U: 매물 정보 업데이트

@@ -1,66 +1,148 @@
 package cse.ssuroom.fragment;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout; // Import SwipeRefreshLayout
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import cse.ssuroom.R;
+import cse.ssuroom.adapter.PropertyListAdapter;
+import cse.ssuroom.database.LeaseTransfer;
+import cse.ssuroom.database.LeaseTransferRepository;
+import cse.ssuroom.database.Property;
+import cse.ssuroom.database.ShortTerm;
+import cse.ssuroom.database.ShortTermRepository;
+import cse.ssuroom.user.User;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link FavorFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class FavorFragment extends Fragment {
+    private RecyclerView recyclerView;
+    private PropertyListAdapter adapter;
+    private List<Property> favoriteProperties = new ArrayList<>();
+    private TextView emptyMessageTextView;
+    private SwipeRefreshLayout swipeRefreshLayout; // Declare SwipeRefreshLayout
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
-    public FavorFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment FavorFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static FavorFragment newInstance(String param1, String param2) {
-        FavorFragment fragment = new FavorFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
+    private ShortTermRepository shortTermRepo;
+    private LeaseTransferRepository leaseTransferRepo;
+    private FirebaseFirestore db;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
+        db = FirebaseFirestore.getInstance();
+        shortTermRepo = new ShortTermRepository();
+        leaseTransferRepo = new LeaseTransferRepository();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_favor, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        recyclerView = view.findViewById(R.id.recycler_view_favorites);
+        emptyMessageTextView = view.findViewById(R.id.text_view_empty_favorites);
+        swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout); // Initialize SwipeRefreshLayout
+        setupRecyclerView();
+        
+        swipeRefreshLayout.setOnRefreshListener(() -> { // Set OnRefreshListener
+            loadFavoriteProperties();
+        });
+
+        loadFavoriteProperties();
+    }
+
+    private void setupRecyclerView() {
+        adapter = new PropertyListAdapter(getContext(), favoriteProperties, R.layout.item_favorite_list);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setAdapter(adapter);
+    }
+
+    private void loadFavoriteProperties() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            updateAdapter(new ArrayList<>()); // 그냥 빈 리스트
+            return;
+        }
+        String uid = currentUser.getUid();
+
+        db.collection("users").document(uid).get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                User user = documentSnapshot.toObject(User.class);
+                if (user != null && user.getFavorites() != null && !user.getFavorites().isEmpty()) {
+                    fetchPropertiesByIds(user.getFavorites());
+                } else {
+                    updateAdapter(new ArrayList<>());
+                }
+            } else {
+                Toast.makeText(getContext(), "잘못된 계정입니다", Toast.LENGTH_SHORT).show();
+                updateAdapter(new ArrayList<>());
+            }
+        }).addOnFailureListener(e -> {
+            Toast.makeText(getContext(), "오류가 발생했습니다", Toast.LENGTH_SHORT).show();
+            updateAdapter(new ArrayList<>());
+        });
+    }
+
+    private void fetchPropertiesByIds(List<String> propertyIds) {
+        List<Property> combinedList = new ArrayList<>();
+        final int[] tasksCompleted = {0};
+        int totalTasks = 2; // 매물 종류 2가지
+
+        // 단기 임대 fetch
+        shortTermRepo.findAllByIds(propertyIds, shortTerms -> {
+            synchronized (combinedList) {
+                combinedList.addAll(shortTerms);
+            }
+            tasksCompleted[0]++;
+            if (tasksCompleted[0] == totalTasks) {
+                updateAdapter(combinedList);
+            }
+        });
+
+        // 계약양도 fetch
+        leaseTransferRepo.findAllByIds(propertyIds, leaseTransfers -> {
+            synchronized (combinedList) {
+                combinedList.addAll(leaseTransfers);
+            }
+            tasksCompleted[0]++;
+            if (tasksCompleted[0] == totalTasks) {
+                updateAdapter(combinedList);
+            }
+        });
+    }
+
+    private void updateAdapter(List<Property> properties) {
+        favoriteProperties.clear();
+        favoriteProperties.addAll(properties);
+        adapter.notifyDataSetChanged();
+
+        if (properties.isEmpty()) {
+            emptyMessageTextView.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+        } else {
+            emptyMessageTextView.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+        }
+        swipeRefreshLayout.setRefreshing(false); // Stop refreshing indicator
     }
 }

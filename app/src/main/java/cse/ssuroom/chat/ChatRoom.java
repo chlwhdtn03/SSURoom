@@ -11,14 +11,24 @@ public class ChatRoom {
     private String lastMessage;
     @ServerTimestamp
     private Date lastTimestamp;
+    private String propertyId;
     private Map<String, Integer> unreadCount;
 
     public ChatRoom() {}
 
     // Getter와 Setter
+    public String getPropertyId() {
+        return propertyId;
+    }
+
+    public void setPropertyId(String propertyId) {
+        this.propertyId = propertyId;
+    }
+
     public String getChatRoomId() {
         return chatRoomId;
     }
+
 
     public void setChatRoomId(String chatRoomId) {
         this.chatRoomId = chatRoomId;
