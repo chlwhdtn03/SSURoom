@@ -4,13 +4,13 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.util.Log;
-
 import androidx.core.content.ContextCompat;
 
 import com.google.ar.core.Anchor;
@@ -24,109 +24,53 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import android.location.Location;
-
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
-
-import cse.ssuroom.map.GeoUtil;
 
 public class ArRenderer implements GLSurfaceView.Renderer {
 
     private static final String TAG = "ArRenderer";
 
-    // Shaders
+    // region SHADERS AND VERTEX DATA
     private static final String CAMERA_VERTEX_SHADER =
-            "attribute vec4 a_Position;\n"
-                    + "attribute vec2 a_TexCoord;\n"
-                    + "varying vec2 v_TexCoord;\n"
-                    + "void main() {\n"
-                    + "    v_TexCoord = a_TexCoord;\n"
-                    + "    gl_Position = a_Position;\n"
-                    + "}";
-
+            "attribute vec4 a_Position; attribute vec2 a_TexCoord; varying vec2 v_TexCoord; void main() { v_TexCoord = a_TexCoord; gl_Position = a_Position; }";
     private static final String CAMERA_FRAGMENT_SHADER =
-            "#extension GL_OES_EGL_image_external : require\n"
-                    + "precision mediump float;\n"
-                    + "varying vec2 v_TexCoord;\n"
-                    + "uniform samplerExternalOES s_Texture;\n"
-                    + "void main() {\n"
-                    + "    gl_FragColor = texture2D(s_Texture, v_TexCoord);\n"
-                    + "}";
+            "#extension GL_OES_EGL_image_external : require\n" +
+                    "precision mediump float; varying vec2 v_TexCoord; uniform samplerExternalOES s_Texture; void main() { gl_FragColor = texture2D(s_Texture, v_TexCoord); }";
 
-    private static final String ICON_VERTEX_SHADER =
-            "uniform mat4 u_MvpMatrix;\n"
-                    + "attribute vec4 a_Position;\n"
-                    + "attribute vec2 a_TexCoord;\n"
-                    + "varying vec2 v_TexCoord;\n"
-                    + "void main() {\n"
-                    + "    v_TexCoord = a_TexCoord;\n"
-                    + "    gl_Position = u_MvpMatrix * a_Position;\n"
-                    + "}";
+    private static final String OBJECT_VERTEX_SHADER =
+            "uniform mat4 u_MvpMatrix; attribute vec4 a_Position; attribute vec2 a_TexCoord; varying vec2 v_TexCoord; void main() { v_TexCoord = a_TexCoord; gl_Position = u_MvpMatrix * a_Position; }";
+    private static final String OBJECT_FRAGMENT_SHADER =
+            "precision mediump float; varying vec2 v_TexCoord; uniform sampler2D s_Texture; void main() { vec4 color = texture2D(s_Texture, v_TexCoord); if(color.a < 0.1) discard; gl_FragColor = color; }";
 
-    private static final String ICON_FRAGMENT_SHADER =
-            "precision mediump float;\n"
-                    + "varying vec2 v_TexCoord;\n"
-                    + "uniform sampler2D s_Texture;\n"
-                    + "void main() {\n"
-                    + "    gl_FragColor = texture2D(s_Texture, v_TexCoord);\n"
-                    + "}";
+    private static final float[] QUAD_COORDS = new float[]{ -1.0f, -1.0f, 0.0f, -1.0f, +1.0f, 0.0f, +1.0f, -1.0f, 0.0f, +1.0f, +1.0f, 0.0f };
+    private static final float[] QUAD_TEX_COORDS = new float[]{ 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f };
+    private static final float[] OBJECT_COORDS = new float[]{ -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.0f };
+    // endregion
 
-    // Vertex data
-    private static final float[] QUAD_COORDS = new float[]{
-            -1.0f, -1.0f, 0.0f, -1.0f, +1.0f, 0.0f, +1.0f, -1.0f, 0.0f, +1.0f, +1.0f, 0.0f,
-    };
-    private static final float[] QUAD_TEX_COORDS = new float[]{
-            0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-    };
-    private static final float[] ICON_COORDS = new float[]{
-            -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, -0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.0f
-    };
-
-    private FloatBuffer quadCoords;
-    private FloatBuffer quadTexCoords;
-    private FloatBuffer transformedQuadTexCoords;
-    private FloatBuffer iconCoords;
-    private FloatBuffer iconTexCoords;
-
-    private int cameraProgram;
-    private int cameraPositionHandle;
-    private int cameraTexCoordHandle;
-    private int cameraTextureHandle;
-    private int iconProgram;
-    private int iconPositionHandle;
-    private int iconTexCoordHandle;
-    private int iconMvpMatrixHandle;
-    private int iconTextureHandle;
-    private int cameraTextureId = -1;
-    private int leaseIconTextureId;
-    private int shortIconTextureId;
+    private FloatBuffer quadCoords, quadTexCoords, transformedQuadTexCoords, objectCoords, objectTexCoords;
+    private int cameraProgram, cameraPositionHandle, cameraTexCoordHandle, cameraTextureHandle;
+    private int objectProgram, objectPositionHandle, objectTexCoordHandle, objectMvpMatrixHandle, objectTextureHandle;
+    private int cameraTextureId = -1, leaseIconTextureId = -1, shortIconTextureId = -1;
 
     private Session session;
     private final ArActivity activity;
     private Location currentLocation;
 
-    private final float[] modelMatrix = new float[16];
-    private final float[] viewMatrix = new float[16];
-    private final float[] projectionMatrix = new float[16];
-    private final float[] mvpMatrix = new float[16];
-    
+    private final float[] modelMatrix = new float[16], viewMatrix = new float[16], projectionMatrix = new float[16], mvpMatrix = new float[16];
+
     public ArRenderer(ArActivity activity) {
         this.activity = activity;
     }
 
-    public void setSession(Session session) {
-        this.session = session;
-    }
-
-    public void setCurrentLocation(Location currentLocation) {
-        this.currentLocation = currentLocation;
-    }
+    public void setSession(Session session) { this.session = session; }
+    public void setCurrentLocation(Location location) { this.currentLocation = location; }
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
@@ -142,67 +86,80 @@ public class ArRenderer implements GLSurfaceView.Renderer {
 
         cameraProgram = createProgram(CAMERA_VERTEX_SHADER, CAMERA_FRAGMENT_SHADER);
         cameraPositionHandle = GLES20.glGetAttribLocation(cameraProgram, "a_Position");
-        if(cameraPositionHandle == -1) throw new RuntimeException("a_Position not found in camera shader");
         cameraTexCoordHandle = GLES20.glGetAttribLocation(cameraProgram, "a_TexCoord");
-        if(cameraTexCoordHandle == -1) throw new RuntimeException("a_TexCoord not found in camera shader");
         cameraTextureHandle = GLES20.glGetUniformLocation(cameraProgram, "s_Texture");
-        if(cameraTextureHandle == -1) throw new RuntimeException("s_Texture not found in camera shader");
 
-        iconProgram = createProgram(ICON_VERTEX_SHADER, ICON_FRAGMENT_SHADER);
-        iconPositionHandle = GLES20.glGetAttribLocation(iconProgram, "a_Position");
-        if(iconPositionHandle == -1) throw new RuntimeException("a_Position not found in icon shader");
-        iconTexCoordHandle = GLES20.glGetAttribLocation(iconProgram, "a_TexCoord");
-        if(iconTexCoordHandle == -1) throw new RuntimeException("a_TexCoord not found in icon shader");
-        iconMvpMatrixHandle = GLES20.glGetUniformLocation(iconProgram, "u_MvpMatrix");
-        if(iconMvpMatrixHandle == -1) throw new RuntimeException("u_MvpMatrix not found in icon shader");
-        iconTextureHandle = GLES20.glGetUniformLocation(iconProgram, "s_Texture");
-        if(iconTextureHandle == -1) throw new RuntimeException("s_Texture not found in icon shader");
-        
-        leaseIconTextureId = loadTexture(activity, R.drawable.leaseicon, 128, 128);
-        shortIconTextureId = loadTexture(activity, R.drawable.shorticon, 128, 128);
+        objectProgram = createProgram(OBJECT_VERTEX_SHADER, OBJECT_FRAGMENT_SHADER);
+        objectPositionHandle = GLES20.glGetAttribLocation(objectProgram, "a_Position");
+        objectTexCoordHandle = GLES20.glGetAttribLocation(objectProgram, "a_TexCoord");
+        objectMvpMatrixHandle = GLES20.glGetUniformLocation(objectProgram, "u_MvpMatrix");
+        objectTextureHandle = GLES20.glGetUniformLocation(objectProgram, "s_Texture");
+
+        leaseIconTextureId = loadTexture(activity, R.drawable.leaseicon);
+        shortIconTextureId = loadTexture(activity, R.drawable.shorticon);
 
         quadCoords = createFloatBuffer(QUAD_COORDS);
         quadTexCoords = createFloatBuffer(QUAD_TEX_COORDS);
         transformedQuadTexCoords = createFloatBuffer(QUAD_TEX_COORDS);
-        iconCoords = createFloatBuffer(ICON_COORDS);
-        iconTexCoords = createFloatBuffer(QUAD_TEX_COORDS);
+        objectCoords = createFloatBuffer(OBJECT_COORDS);
+        objectTexCoords = createFloatBuffer(QUAD_TEX_COORDS);
     }
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
         GLES20.glViewport(0, 0, width, height);
-        activity.getDisplayRotationHelper().onSurfaceChanged(width, height);
+        if (session != null) {
+            int rotation;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                rotation = activity.getDisplay().getRotation();
+            } else {
+                rotation = ((android.view.WindowManager) activity.getSystemService(Context.WINDOW_SERVICE))
+                        .getDefaultDisplay()
+                        .getRotation();
+            }
+            session.setDisplayGeometry(rotation, width, height);
+        }
     }
 
     @Override
     public void onDrawFrame(GL10 gl) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         if (session == null) return;
-
-        activity.getDisplayRotationHelper().updateSessionIfNeeded(session);
+        session.setCameraTextureName(cameraTextureId);
 
         try {
-            session.setCameraTextureName(cameraTextureId);
             Frame frame = session.update();
             com.google.ar.core.Camera camera = frame.getCamera();
+
+            // ⭐ [추가됨] AR 상태 업데이트
+            String statusText = "AR Status: " + camera.getTrackingState().toString();
+            if (camera.getTrackingState() == TrackingState.PAUSED) {
+                statusText += "\n(주변을 비춰주세요)";
+            }
+            activity.updateArStatus(statusText);
+
             drawBackground(frame);
 
             if (camera.getTrackingState() == TrackingState.TRACKING) {
-                frame.getCamera().getViewMatrix(viewMatrix, 0);
-                frame.getCamera().getProjectionMatrix(projectionMatrix, 0, 0.1f, 100.0f);
-                
+                camera.getProjectionMatrix(projectionMatrix, 0, 0.1f, 1000.0f);
+                camera.getViewMatrix(viewMatrix, 0);
+
                 List<Object> currentlyVisibleProperties = new ArrayList<>();
                 for (ArActivity.PropertyForAR prop : activity.getArProperties()) {
                     if (prop.anchorCreationRequested && currentLocation != null) {
-                        float[] translation = GeoUtil.calculateTranslationInAR(currentLocation, prop.latitude, prop.longitude);
-                        Pose anchorPose = Pose.makeTranslation(translation[0], translation[2], -translation[1]);
+                        float[] translation = calculateTranslationInAR(currentLocation, prop.latitude, prop.longitude);
+                        float east = translation[0];
+                        float north = translation[1];
+
+                        Pose anchorPose = Pose.makeTranslation(east, -1.0f, -north);
                         prop.anchor = session.createAnchor(anchorPose);
                         prop.anchorCreationRequested = false;
                     }
+
                     if (prop.anchor != null && prop.anchor.getTrackingState() == TrackingState.TRACKING) {
-                        // This is the crucial check
-                        if (isAnchorVisible(prop.anchor, viewMatrix, projectionMatrix)) {
-                            drawMarker(prop, camera, viewMatrix, projectionMatrix);
+                        drawMarker(prop, camera.getPose(), viewMatrix, projectionMatrix);
+
+                        if (isAnchorVisibleInScreen(prop.anchor, viewMatrix, projectionMatrix)) {
                             Object fullProperty = activity.getPropertyById(prop.id, prop.type);
                             if (fullProperty != null) currentlyVisibleProperties.add(fullProperty);
                         }
@@ -210,36 +167,40 @@ public class ArRenderer implements GLSurfaceView.Renderer {
                 }
                 activity.updateVisibleProperties(currentlyVisibleProperties);
             }
-        } catch (com.google.ar.core.exceptions.CameraNotAvailableException e) {
-            Log.e(TAG, "Exception onDrawFrame", e);
+        } catch (Throwable t) {
+            Log.e(TAG, "Exception onDrawFrame", t);
         }
     }
 
-    private void drawMarker(ArActivity.PropertyForAR prop, com.google.ar.core.Camera camera, float[] viewMatrix, float[] projectionMatrix) {
+    private void drawMarker(ArActivity.PropertyForAR prop, Pose cameraPose, float[] viewMatrix, float[] projectionMatrix) {
         float[] anchorMatrix = new float[16];
         prop.anchor.getPose().toMatrix(anchorMatrix, 0);
 
-        float[] cameraPoseMatrix = new float[16];
-        camera.getPose().toMatrix(cameraPoseMatrix, 0);
-        
-        float[] cameraPosition = {cameraPoseMatrix[12], cameraPoseMatrix[13], cameraPoseMatrix[14]};
-        float[] anchorPosition = {anchorMatrix[12], anchorMatrix[13], anchorMatrix[14]};
+        float[] anchorTranslation = new float[]{anchorMatrix[12], anchorMatrix[13], anchorMatrix[14]};
 
-        float[] lookAtMatrix = new float[16];
-        Matrix.setLookAtM(lookAtMatrix, 0, anchorPosition[0], anchorPosition[1], anchorPosition[2], cameraPosition[0], cameraPosition[1], cameraPosition[2], 0f, 1f, 0f);
-        
-        Matrix.invertM(modelMatrix, 0, lookAtMatrix, 0);
-
-        // Apply distance-based scaling
-        float distance = prop.distance;
-        float scaleFactor = 1.5f - (distance / 500.0f) * 0.9f;
-        scaleFactor = Math.max(0.6f, Math.min(scaleFactor, 1.5f));
-        Matrix.scaleM(modelMatrix, 0, scaleFactor, scaleFactor, scaleFactor);
-
-        if (distance < 50) {
-            float time = (float) (System.currentTimeMillis() % 2000) / 2000.0f;
-            Matrix.translateM(modelMatrix, 0, 0f, (float) (Math.sin(time * 2 * Math.PI) * 0.2f), 0f);
+        float bobbingOffset = 0.0f;
+        if (prop.distance <= 50.0f) {
+            float time = (float)(System.currentTimeMillis() % 1000L) / 1000.0f * (float)Math.PI * 2.0f;
+            bobbingOffset = (float)Math.sin(time) * 0.5f;
         }
+
+        float[] cameraTranslation = cameraPose.getTranslation();
+        float[] lookVector = new float[]{
+                cameraTranslation[0] - anchorTranslation[0],
+                0,
+                cameraTranslation[2] - anchorTranslation[2]
+        };
+
+        double angle = Math.atan2(lookVector[0], lookVector[2]);
+        float rotationDegrees = (float) Math.toDegrees(angle);
+
+        Matrix.setIdentityM(modelMatrix, 0);
+
+        Matrix.translateM(modelMatrix, 0, anchorTranslation[0], anchorTranslation[1] + bobbingOffset, anchorTranslation[2]);
+        Matrix.rotateM(modelMatrix, 0, rotationDegrees, 0.0f, 1.0f, 0.0f);
+        Matrix.rotateM(modelMatrix, 0, 90.0f, 0.0f, 0.0f, 1.0f);
+
+        Matrix.scaleM(modelMatrix, 0, 20.0f, 20.0f, 20.0f);
 
         Matrix.multiplyMM(mvpMatrix, 0, viewMatrix, 0, modelMatrix, 0);
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0);
@@ -250,6 +211,7 @@ public class ArRenderer implements GLSurfaceView.Renderer {
     private void drawBackground(Frame frame) {
         GLES20.glDepthMask(false);
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
+
         GLES20.glUseProgram(cameraProgram);
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, cameraTextureId);
         frame.transformDisplayUvCoords(quadTexCoords, transformedQuadTexCoords);
@@ -260,67 +222,86 @@ public class ArRenderer implements GLSurfaceView.Renderer {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
         GLES20.glDisableVertexAttribArray(cameraPositionHandle);
         GLES20.glDisableVertexAttribArray(cameraTexCoordHandle);
+
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
         GLES20.glDepthMask(true);
     }
 
     private void drawIcon(ArActivity.PropertyForAR prop) {
-        GLES20.glDisable(GLES20.GL_CULL_FACE);
-        GLES20.glDisable(GLES20.GL_DEPTH_TEST);
-        
-        GLES20.glUseProgram(iconProgram);
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
-        int textureId = "lease".equals(prop.type) ? leaseIconTextureId : shortIconTextureId;
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
-        GLES20.glUniform1i(iconTextureHandle, 1);
-        GLES20.glUniformMatrix4fv(iconMvpMatrixHandle, 1, false, mvpMatrix, 0);
-        GLES20.glVertexAttribPointer(iconPositionHandle, 3, GLES20.GL_FLOAT, false, 0, iconCoords);
-        GLES20.glVertexAttribPointer(iconTexCoordHandle, 2, GLES20.GL_FLOAT, false, 0, iconTexCoords);
-        GLES20.glEnableVertexAttribArray(iconPositionHandle);
-        GLES20.glEnableVertexAttribArray(iconTexCoordHandle);
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-        checkGlError("drawIcon");
-        GLES20.glDisableVertexAttribArray(iconPositionHandle);
-        GLES20.glDisableVertexAttribArray(iconTexCoordHandle);
+        GLES20.glUseProgram(objectProgram);
 
-        GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+        GLES20.glEnable(GLES20.GL_BLEND);
+        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
+
+        int textureId = "lease".equals(prop.type) ? leaseIconTextureId : shortIconTextureId;
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
+        GLES20.glUniform1i(objectTextureHandle, 0);
+
+        GLES20.glUniformMatrix4fv(objectMvpMatrixHandle, 1, false, mvpMatrix, 0);
+
+        GLES20.glEnableVertexAttribArray(objectPositionHandle);
+        GLES20.glEnableVertexAttribArray(objectTexCoordHandle);
+        GLES20.glVertexAttribPointer(objectPositionHandle, 3, GLES20.GL_FLOAT, false, 0, objectCoords);
+        GLES20.glVertexAttribPointer(objectTexCoordHandle, 2, GLES20.GL_FLOAT, false, 0, objectTexCoords);
+
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+
+        GLES20.glDisableVertexAttribArray(objectPositionHandle);
+        GLES20.glDisableVertexAttribArray(objectTexCoordHandle);
+
+        GLES20.glDisable(GLES20.GL_BLEND);
     }
-    
-    private boolean isAnchorVisible(Anchor anchor, float[] viewMatrix, float[] projectionMatrix) {
+
+    private boolean isAnchorVisibleInScreen(Anchor anchor, float[] viewMatrix, float[] projectionMatrix) {
+        float[] vpMatrix = new float[16];
+        Matrix.multiplyMM(vpMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
         float[] anchorPose = new float[16];
         anchor.getPose().toMatrix(anchorPose, 0);
-
         float[] worldPos = {anchorPose[12], anchorPose[13], anchorPose[14], 1};
-
-        float[] viewProjectionMatrix = new float[16];
-        Matrix.multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
-
         float[] screenPos = new float[4];
-        Matrix.multiplyMV(screenPos, 0, viewProjectionMatrix, 0, worldPos, 0);
+        Matrix.multiplyMV(screenPos, 0, vpMatrix, 0, worldPos, 0);
 
-        return screenPos[3] > 0
-                && Math.abs(screenPos[0] / screenPos[3]) < 1
-                && Math.abs(screenPos[1] / screenPos[3]) < 1;
+        float w = screenPos[3];
+        return w > 0 && Math.abs(screenPos[0]) < w * 1.2f && Math.abs(screenPos[1]) < w * 1.2f;
     }
 
-    private static int loadTexture(Context context, int resourceId, int width, int height) {
+    // region HELPER FUNCTIONS
+    private static float[] calculateTranslationInAR(Location userLocation, double targetLatitude, double targetLongitude) {
+        Location targetLocation = new Location("");
+        targetLocation.setLatitude(targetLatitude);
+        targetLocation.setLongitude(targetLongitude);
+
+        float distance = userLocation.distanceTo(targetLocation);
+        float bearing = userLocation.bearingTo(targetLocation);
+        double bearingRad = Math.toRadians(bearing);
+
+        float east = (float) (distance * Math.sin(bearingRad));
+        float north = (float) (distance * Math.cos(bearingRad));
+
+        return new float[]{east, north};
+    }
+
+    private static int loadTexture(Context context, int resourceId) {
         final int[] textureHandle = new int[1];
         GLES20.glGenTextures(1, textureHandle, 0);
         if (textureHandle[0] != 0) {
-            Bitmap bitmap = getBitmapFromVectorDrawable(context, resourceId, width, height);
+            Bitmap bitmap = getBitmapFromVectorDrawable(context, resourceId);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
             bitmap.recycle();
         }
-        if (textureHandle[0] == 0) throw new RuntimeException("Error loading texture.");
+        if (textureHandle[0] == 0) {
+            throw new RuntimeException("Error loading texture.");
+        }
         return textureHandle[0];
     }
 
-    private static Bitmap getBitmapFromVectorDrawable(Context context, int drawableId, int width, int height) {
+    private static Bitmap getBitmapFromVectorDrawable(Context context, int drawableId) {
         Drawable drawable = ContextCompat.getDrawable(context, drawableId);
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
         drawable.draw(canvas);
@@ -329,11 +310,20 @@ public class ArRenderer implements GLSurfaceView.Renderer {
 
     private static int createProgram(String vertex, String fragment) {
         int v = loadShader(GLES20.GL_VERTEX_SHADER, vertex);
+        if (v == 0) return 0;
         int f = loadShader(GLES20.GL_FRAGMENT_SHADER, fragment);
+        if (f == 0) return 0;
         int p = GLES20.glCreateProgram();
         GLES20.glAttachShader(p, v);
         GLES20.glAttachShader(p, f);
         GLES20.glLinkProgram(p);
+        final int[] linkStatus = new int[1];
+        GLES20.glGetProgramiv(p, GLES20.GL_LINK_STATUS, linkStatus, 0);
+        if (linkStatus[0] == 0) {
+            Log.e(TAG, "Error linking program: " + GLES20.glGetProgramInfoLog(p));
+            GLES20.glDeleteProgram(p);
+            p = 0;
+        }
         return p;
     }
 
@@ -341,6 +331,13 @@ public class ArRenderer implements GLSurfaceView.Renderer {
         int shader = GLES20.glCreateShader(type);
         GLES20.glShaderSource(shader, shaderCode);
         GLES20.glCompileShader(shader);
+        final int[] compileStatus = new int[1];
+        GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
+        if (compileStatus[0] == 0) {
+            Log.e(TAG, "Error compiling shader: " + GLES20.glGetShaderInfoLog(shader));
+            GLES20.glDeleteShader(shader);
+            shader = 0;
+        }
         return shader;
     }
 
@@ -352,12 +349,5 @@ public class ArRenderer implements GLSurfaceView.Renderer {
         fb.position(0);
         return fb;
     }
-
-    private static void checkGlError(String label) {
-        int error;
-        while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR) {
-            Log.e(TAG, label + ": glError " + error);
-            throw new RuntimeException(label + ": glError " + error);
-        }
-    }
+    // endregion
 }

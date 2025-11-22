@@ -8,6 +8,7 @@ import android.location.Location;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.TextView; // ⭐ 추가됨
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -27,7 +28,6 @@ import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import com.google.ar.core.Frame;
 import com.google.ar.core.Camera;
-import android.view.MotionEvent;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Trackable;
@@ -58,6 +58,7 @@ public class ArActivity extends AppCompatActivity {
     private static final String TAG = "ArActivity";
 
     private GLSurfaceView glSurfaceView;
+    private TextView tvStatus; // ⭐ [추가됨]
     private ArRenderer renderer;
     private Session session;
 
@@ -67,11 +68,6 @@ public class ArActivity extends AppCompatActivity {
     private FusedLocationProviderClient fusedLocationProviderClient;
     private LocationCallback locationCallback;
     private Location currentLocation;
-
-    private DisplayRotationHelper displayRotationHelper;
-    private TapHelper tapHelper;
-
-    private final ArrayList<Anchor> tappedAnchors = new ArrayList<>();
 
     private LeaseTransferRepository leaseRepo;
     private ShortTermRepository shortRepo;
@@ -136,14 +132,10 @@ public class ArActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_ar);
 
         glSurfaceView = findViewById(R.id.ar_gl_surface_view);
-        
-        displayRotationHelper = new DisplayRotationHelper(this);
-        tapHelper = new TapHelper(this);
-        glSurfaceView.setOnTouchListener(tapHelper);
+        tvStatus = findViewById(R.id.tv_ar_status); // ⭐ [추가됨] TextView 연결
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -162,7 +154,6 @@ public class ArActivity extends AppCompatActivity {
             }
         };
 
-        // Setup RecyclerView
         arRecyclerView = findViewById(R.id.ar_recycler_view);
         arAdapter = new ArPropertyListAdapter(this, visibleProperties);
         arRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
@@ -181,15 +172,22 @@ public class ArActivity extends AppCompatActivity {
             leaseList.clear();
             leaseList.addAll(list);
             leaseDataLoaded = true;
-            Log.d(TAG, "Lease data loaded. Items: " + list.size());
             processArProperties();
         });
         shortRepo.findAll(list -> {
             shortList.clear();
             shortList.addAll(list);
             shortDataLoaded = true;
-            Log.d(TAG, "Short-term data loaded. Items: " + list.size());
             processArProperties();
+        });
+    }
+
+    // ⭐ [추가됨] 렌더러에서 호출하여 상태 텍스트 업데이트
+    public void updateArStatus(String status) {
+        runOnUiThread(() -> {
+            if (tvStatus != null) {
+                tvStatus.setText(status);
+            }
         });
     }
 
@@ -232,7 +230,6 @@ public class ArActivity extends AppCompatActivity {
 
         glSurfaceView.onResume();
         renderer.setSession(session);
-        displayRotationHelper.onResume();
         startLocationUpdates();
     }
 
@@ -243,7 +240,6 @@ public class ArActivity extends AppCompatActivity {
             session.pause();
         }
         glSurfaceView.onPause();
-        displayRotationHelper.onPause();
         stopLocationUpdates();
     }
 
@@ -291,10 +287,8 @@ public class ArActivity extends AppCompatActivity {
 
     private synchronized void processArProperties() {
         if (currentLocation == null || !leaseDataLoaded || !shortDataLoaded) {
-            Log.d(TAG, "processArProperties() called but prerequisites not met. Location: " + (currentLocation != null) + ", LeaseData: " + leaseDataLoaded + ", ShortData: " + shortDataLoaded);
             return;
         }
-        Log.d(TAG, "processArProperties() - All prerequisites met. Processing...");
 
         double currentLatitude = currentLocation.getLatitude();
         double currentLongitude = currentLocation.getLongitude();
@@ -308,33 +302,27 @@ public class ArActivity extends AppCompatActivity {
                 Object latObj = loc.get("latitude");
                 Object lonObj = loc.get("longitude");
 
-                if (!(latObj instanceof Number) || !(lonObj instanceof Number)) {
-                    Log.w(TAG, "Invalid location data for lease property: " + lease.getPropertyId());
-                    continue;
-                }
+                if (!(latObj instanceof Number) || !(lonObj instanceof Number)) continue;
 
                 double lat = ((Number) latObj).doubleValue();
                 double lon = ((Number) lonObj).doubleValue();
 
                 float[] distance = new float[1];
                 Location.distanceBetween(currentLatitude, currentLongitude, lat, lon, distance);
-                Log.d(TAG, "Lease property " + lease.getPropertyId() + " at (" + lat + ", " + lon + ") is " + distance[0] + "m away.");
 
                 PropertyForAR arProperty = new PropertyForAR(lease.getPropertyId(), "lease", lat, lon);
                 arProperty.distance = distance[0];
                 int index = arProperties.indexOf(arProperty);
 
-                if (distance[0] < 500) { // 500미터 이내
-                    if (index == -1) { // 새로 추가된 매물
-                        Log.d(TAG, "Adding lease property to AR list: " + lease.getPropertyId());
+                if (distance[0] < 500) {
+                    if (index == -1) {
                         arProperty.anchorCreationRequested = true;
                         arProperties.add(arProperty);
                     } else {
                         arProperties.get(index).distance = distance[0];
                     }
-                } else { // 500미터 밖
-                    if (index != -1) { // 기존에 있던 매물이 멀어짐
-                        Log.d(TAG, "Removing lease property from AR list: " + lease.getPropertyId());
+                } else {
+                    if (index != -1) {
                         PropertyForAR existingProp = arProperties.get(index);
                         if (existingProp.anchor != null) {
                             existingProp.anchor.detach();
@@ -356,25 +344,20 @@ public class ArActivity extends AppCompatActivity {
                 Object latObj = loc.get("latitude");
                 Object lonObj = loc.get("longitude");
 
-                if (!(latObj instanceof Number) || !(lonObj instanceof Number)) {
-                    Log.w(TAG, "Invalid location data for short-term property: " + shortTerm.getPropertyId());
-                    continue;
-                }
+                if (!(latObj instanceof Number) || !(lonObj instanceof Number)) continue;
 
                 double lat = ((Number) latObj).doubleValue();
                 double lon = ((Number) lonObj).doubleValue();
 
                 float[] distance = new float[1];
                 Location.distanceBetween(currentLatitude, currentLongitude, lat, lon, distance);
-                Log.d(TAG, "Short-term property " + shortTerm.getPropertyId() + " at (" + lat + ", " + lon + ") is " + distance[0] + "m away.");
 
                 PropertyForAR arProperty = new PropertyForAR(shortTerm.getPropertyId(), "short", lat, lon);
                 arProperty.distance = distance[0];
                 int index = arProperties.indexOf(arProperty);
 
-                if (distance[0] < 500) { // 500미터 이내
+                if (distance[0] < 500) {
                     if (index == -1) {
-                        Log.d(TAG, "Adding short-term property to AR list: " + shortTerm.getPropertyId());
                         arProperty.anchorCreationRequested = true;
                         arProperties.add(arProperty);
                     } else {
@@ -382,7 +365,6 @@ public class ArActivity extends AppCompatActivity {
                     }
                 } else {
                     if (index != -1) {
-                        Log.d(TAG, "Removing short-term property from AR list: " + shortTerm.getPropertyId());
                         PropertyForAR existingProp = arProperties.get(index);
                         if (existingProp.anchor != null) {
                             existingProp.anchor.detach();
@@ -398,14 +380,6 @@ public class ArActivity extends AppCompatActivity {
 
     public List<PropertyForAR> getArProperties() {
         return arProperties;
-    }
-
-    public List<LeaseTransfer> getLeaseList() {
-        return leaseList;
-    }
-
-    public List<ShortTerm> getShortList() {
-        return shortList;
     }
 
     public Object getPropertyById(String id, String type) {
@@ -428,48 +402,6 @@ public class ArActivity extends AppCompatActivity {
     public void updateVisibleProperties(List<Object> newVisibleProperties) {
         runOnUiThread(() -> {
             arAdapter.updateProperties(newVisibleProperties);
-            Log.d(TAG, "UI updated with " + visibleProperties.size() + " visible properties.");
         });
     }
-
-    public TapHelper getTapHelper() {
-        return tapHelper;
-    }
-
-    public DisplayRotationHelper getDisplayRotationHelper() {
-        return displayRotationHelper;
-    }
-
-    public Session getSession() {
-        return session;
-    }
-
-    public void handleTap(Frame frame, Camera camera) {
-        MotionEvent tap = tapHelper.poll();
-        if (tap != null && camera.getTrackingState() == TrackingState.TRACKING) {
-            Log.d(TAG, "Tap detected at: (" + tap.getX() + ", " + tap.getY() + ")");
-            List<HitResult> hitResultList = frame.hitTest(tap);
-            Log.d(TAG, "Hit test results: " + hitResultList.size());
-            for (HitResult hit : hitResultList) {
-                // Check if any plane was hit, and create an anchor.
-                Trackable trackable = hit.getTrackable();
-                if ((trackable instanceof Plane && ((Plane) trackable).isPoseInPolygon(hit.getHitPose()))
-                        || (trackable instanceof Point && ((Point) trackable).getOrientationMode() == OrientationMode.ESTIMATED_SURFACE_NORMAL)) {
-                    // Cap the number of objects created.
-                    if (tappedAnchors.size() >= 20) {
-                        tappedAnchors.get(0).detach();
-                        tappedAnchors.remove(0);
-                    }
-                    tappedAnchors.add(hit.createAnchor());
-                    Log.d(TAG, "Anchor created from tap at: " + hit.getHitPose());
-                    break;
-                }
-            }
-        }
-    }
-
-    public ArrayList<Anchor> getTappedAnchors() {
-        return tappedAnchors;
-    }
-
 }
