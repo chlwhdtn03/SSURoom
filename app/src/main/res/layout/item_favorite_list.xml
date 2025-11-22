@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/room_image"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_margin="12dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_launcher_background"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.MaterialComponents.MediumComponent" />
+
+        <ImageView
+            android:id="@+id/favorite_icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:padding="6dp"
+            android:src="@drawable/ic_favor"
+            app:layout_constraintEnd_toEndOf="@id/room_image"
+            app:layout_constraintTop_toTopOf="@id/room_image" />
+            
+        <TextView
+            android:id="@+id/room_score_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:text="슈방점수"
+            android:textColor="@android:color/darker_gray"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="12dp"/>
+
+        <TextView
+            android:id="@+id/room_score"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="92"
+            android:textColor="#673AB7"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="@id/room_score_label"
+            app:layout_constraintStart_toStartOf="@id/room_score_label"
+            app:layout_constraintTop_toBottomOf="@id/room_score_label" />
+
+        <TextView
+            android:id="@+id/property_type_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_badge"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textColor="@android:color/white"
+            android:textSize="10dp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@id/room_image"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_marginTop="12dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
+            tools:text="계약양도" />
+
+        <TextView
+            android:id="@+id/room_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="12dp"
+            tools:text="깔끔한 풀옵션 원룸"
+            android:textColor="@android:color/black"
+            android:textSize="14dp"
+            android:textStyle="normal"
+            app:layout_constraintEnd_toStartOf="@+id/room_score_label"
+            app:layout_constraintStart_toEndOf="@id/property_type_badge"
+            app:layout_constraintTop_toTopOf="@id/property_type_badge" />
+
+        <TextView
+            android:id="@+id/room_price"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="12dp"
+            android:textColor="@android:color/black"
+            android:textSize="16sp"
+            android:textStyle="normal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toEndOf="@id/room_image"
+            app:layout_constraintTop_toBottomOf="@id/room_title"
+            tools:text="80,000원/주" />
+
+        <TextView
+            android:id="@+id/room_location"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="4dp"
+            tools:text="서울특별시 동작구 상도로54길 51"
+            android:textColor="@android:color/black"
+            android:textSize="12dp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@+id/view_on_map_button"
+            app:layout_constraintStart_toEndOf="@id/room_image"
+            app:layout_constraintTop_toBottomOf="@id/room_price" />
+
+        <TextView
+            android:id="@+id/room_duration"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="4dp"
+            tools:text="2025.01.01 ~ 2025.03.31"
+            android:textColor="@android:color/black"
+            android:textSize="12dp"
+            app:layout_constraintEnd_toStartOf="@+id/view_on_map_button"
+            app:layout_constraintStart_toEndOf="@id/room_image"
+            app:layout_constraintTop_toBottomOf="@id/room_location" />
+
+        <Button
+            android:id="@+id/view_on_map_button"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginEnd="12dp"
+            android:text="지도보기"
+            android:textSize="12dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.cardview.widget.CardView>

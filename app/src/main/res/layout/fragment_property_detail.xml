@@ -45,10 +45,10 @@
                 <!-- 상단 버튼들 -->
                 <ImageButton
                     android:id="@+id/btnFavorite"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:layout_gravity="top|start"
-                    android:layout_margin="16dp"
+                    android:layout_margin="8dp"
                     android:background="@drawable/bg_circle_button"
                     android:src="@drawable/ic_favor"
                     android:contentDescription="찜하기"/>
