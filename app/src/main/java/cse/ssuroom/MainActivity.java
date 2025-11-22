@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
         fragmentManager.beginTransaction().add(R.id.screen, roomlistFragment, "roomlist").commit();
 
 
-
+        changeFragment(roomlistFragment);
         binding.bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.action_roomlist) {

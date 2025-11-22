@@ -21,6 +21,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.google.android.gms.tasks.OnCanceledListener;
 import com.google.firebase.auth.FirebaseAuth;
 
 import cse.ssuroom.MainActivity;
@@ -97,6 +98,7 @@ public class LoginFragment extends Fragment {
             return;
         }
 
+
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(requireActivity(), task -> {
                     if (task.isSuccessful()) {
@@ -109,6 +111,10 @@ public class LoginFragment extends Fragment {
                         Toast.makeText(getContext(), "이메일 또는 비밀번호를 확인해주세요" + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
 
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("ERROR", e.getLocalizedMessage());
+                    e.printStackTrace();
                 });
     }
     private void gotoMainActivity(){
