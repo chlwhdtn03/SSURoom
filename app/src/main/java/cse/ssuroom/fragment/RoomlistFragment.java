@@ -61,7 +61,7 @@ public class RoomlistFragment extends Fragment {
         leaseTransferRepo = new LeaseTransferRepository();
 
         // RecyclerView 설정
-        adapter = new PropertyListAdapter(requireContext(), propertyList);
+        adapter = new PropertyListAdapter(requireContext(), propertyList, R.layout.item_room_list);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setAdapter(adapter);
 
