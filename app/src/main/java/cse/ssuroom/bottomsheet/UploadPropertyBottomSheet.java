@@ -23,12 +23,24 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import cse.ssuroom.BuildConfig;
 import cse.ssuroom.R;
+import cse.ssuroom.DaumAddressActivity;
 import cse.ssuroom.adapter.ImageUploadAdapter;
 import cse.ssuroom.database.LeaseTransfer;
 import cse.ssuroom.database.LeaseTransferRepository;
@@ -38,8 +50,11 @@ import cse.ssuroom.databinding.FragmentUploadPropertyBinding;
 
 public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
 
+    private static final String KAKAO_REST_API_KEY = BuildConfig.KAKAO_REST_API_KEY;
+
     private FragmentUploadPropertyBinding binding;
     private ActivityResultLauncher<Intent> galleryLauncher;
+    private ActivityResultLauncher<Intent> addressLauncher;
     private final FirebaseStorage storage = FirebaseStorage.getInstance();
     private final StorageReference storageRef = storage.getReference();
     private final FirebaseAuth mAuth = FirebaseAuth.getInstance();
@@ -59,6 +74,13 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
     private boolean isBedSelected = false;
     private boolean isDeskSelected = false;
 
+    // 선택된 주소 저장
+    private String selectedAddress = "";
+    private double selectedLatitude = 0.0;
+    private double selectedLongitude = 0.0;
+
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+
     public static UploadPropertyBottomSheet newInstance() {
         return new UploadPropertyBottomSheet();
     }
@@ -74,6 +96,7 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
 
         setupRecyclerView();
 
+        // 갤러리 런처 초기화
         galleryLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
@@ -81,6 +104,22 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
                         Uri selectedImageUri = result.getData().getData();
                         if (selectedImageUri != null) {
                             uploadImageToFirebase(selectedImageUri);
+                        }
+                    }
+                }
+        );
+
+        // 주소 검색 런처 초기화
+        addressLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        String address = result.getData().getStringExtra(DaumAddressActivity.EXTRA_SELECTED_ADDRESS);
+
+                        if (address != null) {
+                            selectedAddress = address;
+                            binding.etLocation.setText(address);
+                            Toast.makeText(requireContext(), "주소가 선택되었습니다", Toast.LENGTH_SHORT).show();
                         }
                     }
                 }
@@ -181,6 +220,17 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
             intent.setType("image/*");
             galleryLauncher.launch(intent);
         });
+
+        // 주소 검색 버튼 클릭 리스너
+        binding.btnSearchAddress.setOnClickListener(v -> {
+            Intent intent = new Intent(requireActivity(), DaumAddressActivity.class);
+            addressLauncher.launch(intent);
+        });
+
+        // etLocation 한글 입력 가능하도록 설정
+        binding.etLocation.setInputType(android.text.InputType.TYPE_CLASS_TEXT);
+        binding.etLocation.setFocusable(true);
+        binding.etLocation.setFocusableInTouchMode(true);
 
         // 편의시설 버튼 클릭 리스너
         binding.cardFullOption.setOnClickListener(v -> {
@@ -288,11 +338,160 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
         binding.btnSubmit.setEnabled(false);
         Toast.makeText(requireContext(), "매물 등록 중...", Toast.LENGTH_SHORT).show();
 
-        if (isShortTerm) {
-            saveShortTermProperty(hostId, title, description, location);
+        // 주소가 있으면 먼저 좌표로 변환
+        if (!location.isEmpty()) {
+            convertAddressToCoordinates(location, hostId, title, description, location);
         } else {
-            saveLeaseTransferProperty(hostId, title, description, location);
+            // 주소 없으면 바로 저장
+            if (isShortTerm) {
+                saveShortTermProperty(hostId, title, description, location);
+            } else {
+                saveLeaseTransferProperty(hostId, title, description, location);
+            }
         }
+    }
+
+    /**
+     * 카카오 API로 주소를 위도/경도로 변환
+     */
+    private void convertAddressToCoordinates(String address, String hostId, String title, String description, String location) {
+        android.util.Log.d("Geocoding", "=== 카카오 API 좌표 변환 시작 ===");
+        android.util.Log.d("Geocoding", "주소: " + address);
+        android.util.Log.d("Geocoding", "API Key 길이: " + KAKAO_REST_API_KEY.length() + " chars");
+        android.util.Log.d("Geocoding", "API Key 시작 5글자: " + (KAKAO_REST_API_KEY.length() >= 5 ? KAKAO_REST_API_KEY.substring(0, 5) : KAKAO_REST_API_KEY) + "...");
+
+        executorService.execute(() -> {
+            try {
+                String encodedAddress = URLEncoder.encode(address, "UTF-8");
+                String apiURL = "https://dapi.kakao.com/v2/local/search/address.json?query=" + encodedAddress;
+
+                android.util.Log.d("Geocoding", "API URL: " + apiURL);
+
+                URL url = new URL(apiURL);
+                HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                con.setRequestMethod("GET");
+
+                // 카카오는 Authorization 헤더 사용
+                String apiKey = KAKAO_REST_API_KEY.trim();
+                con.setRequestProperty("Authorization", "KakaoAK " + apiKey);
+
+                android.util.Log.d("Geocoding", "요청 헤더 설정 완료");
+
+                int responseCode = con.getResponseCode();
+                android.util.Log.d("Geocoding", "========================================");
+                android.util.Log.d("Geocoding", "응답 코드: " + responseCode);
+                android.util.Log.d("Geocoding", "========================================");
+
+                BufferedReader br;
+                if (responseCode == 200) {
+                    br = new BufferedReader(new InputStreamReader(con.getInputStream(), "UTF-8"));
+                } else {
+                    br = new BufferedReader(new InputStreamReader(con.getErrorStream(), "UTF-8"));
+                }
+
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    response.append(line);
+                }
+                br.close();
+
+                android.util.Log.d("Geocoding", "응답 내용: " + response.toString());
+
+                // JSON 파싱
+                JSONObject jsonResponse = new JSONObject(response.toString());
+
+                // 에러 확인
+                if (responseCode != 200) {
+                    android.util.Log.e("Geocoding", "========================================");
+                    android.util.Log.e("Geocoding", " API 에러 발생!");
+                    android.util.Log.e("Geocoding", "응답 코드: " + responseCode);
+                    android.util.Log.e("Geocoding", "응답 내용: " + response.toString());
+                    android.util.Log.e("Geocoding", "========================================");
+
+                    selectedLatitude = 0.0;
+                    selectedLongitude = 0.0;
+                    savePropertyWithCoordinates(hostId, title, description, location);
+                    return;
+                }
+
+                // meta 정보 확인
+                if (jsonResponse.has("meta")) {
+                    JSONObject meta = jsonResponse.getJSONObject("meta");
+                    int totalCount = meta.optInt("total_count", 0);
+                    android.util.Log.d("Geocoding", "검색 결과 개수: " + totalCount);
+                }
+
+                // documents 배열에서 주소 정보 추출
+                JSONArray documents = jsonResponse.optJSONArray("documents");
+
+                if (documents != null && documents.length() > 0) {
+                    JSONObject firstDoc = documents.getJSONObject(0);
+
+                    // 카카오는 "y"가 위도, "x"가 경도
+                    selectedLatitude = firstDoc.getDouble("y");
+                    selectedLongitude = firstDoc.getDouble("x");
+
+                    android.util.Log.d("Geocoding", "========================================");
+                    android.util.Log.d("Geocoding", " 변환 성공! ");
+                    android.util.Log.d("Geocoding", "위도(y): " + selectedLatitude);
+                    android.util.Log.d("Geocoding", "경도(x): " + selectedLongitude);
+
+                    // 추가 정보 로그
+                    String addressName = firstDoc.optString("address_name", "");
+                    String roadAddressName = "";
+                    if (firstDoc.has("road_address") && !firstDoc.isNull("road_address")) {
+                        JSONObject roadAddress = firstDoc.getJSONObject("road_address");
+                        roadAddressName = roadAddress.optString("address_name", "");
+                    }
+
+                    android.util.Log.d("Geocoding", "지번 주소: " + addressName);
+                    if (!roadAddressName.isEmpty()) {
+                        android.util.Log.d("Geocoding", "도로명 주소: " + roadAddressName);
+                    }
+                    android.util.Log.d("Geocoding", "========================================");
+                } else {
+                    android.util.Log.e("Geocoding", "========================================");
+                    android.util.Log.e("Geocoding", "❌ 주소 변환 실패: documents 배열이 비어있음");
+                    android.util.Log.e("Geocoding", "전체 응답: " + response.toString());
+                    android.util.Log.e("Geocoding", "========================================");
+                    selectedLatitude = 0.0;
+                    selectedLongitude = 0.0;
+                }
+
+                savePropertyWithCoordinates(hostId, title, description, location);
+
+            } catch (Exception e) {
+                android.util.Log.e("Geocoding", "========================================");
+                android.util.Log.e("Geocoding", "❌ 예외 발생!", e);
+                android.util.Log.e("Geocoding", "에러 타입: " + e.getClass().getSimpleName());
+                android.util.Log.e("Geocoding", "에러 메시지: " + e.getMessage());
+                android.util.Log.e("Geocoding", "========================================");
+                e.printStackTrace();
+
+                selectedLatitude = 0.0;
+                selectedLongitude = 0.0;
+
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "주소 변환 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    savePropertyWithCoordinates(hostId, title, description, location);
+                });
+            }
+        });
+    }
+
+    /**
+     * 좌표 변환 후 실제 저장 수행
+     */
+    private void savePropertyWithCoordinates(String hostId, String title, String description, String location) {
+        requireActivity().runOnUiThread(() -> {
+            android.util.Log.d("Geocoding", "=== 저장 시작 (위도: " + selectedLatitude + ", 경도: " + selectedLongitude + ") ===");
+            if (isShortTerm) {
+                saveShortTermProperty(hostId, title, description, location);
+            } else {
+                saveLeaseTransferProperty(hostId, title, description, location);
+            }
+        });
     }
 
     private void saveShortTermProperty(String hostId, String title, String description, String location) {
@@ -481,11 +680,13 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
         HashMap<String, Object> location = new HashMap<>();
         if (locationInput.isEmpty()) {
             location.put("address", "서울시 동작구 상도동");
+            location.put("latitude", 0);
+            location.put("longitude", 0);
         } else {
             location.put("address", locationInput);
+            location.put("latitude", selectedLatitude);
+            location.put("longitude", selectedLongitude);
         }
-        location.put("latitude", 0);
-        location.put("longitude", 0);
         location.put("distanceToSchool", 0);
         return location;
     }
@@ -503,6 +704,7 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        executorService.shutdown();
         binding = null;
     }
 }

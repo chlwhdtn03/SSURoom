@@ -1,3 +1,5 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+import java.util.Properties
 plugins {
 
     alias(libs.plugins.android.application)
@@ -8,6 +10,10 @@ plugins {
 android {
     namespace = "cse.ssuroom"
     compileSdk = 36
+    buildFeatures {
+        buildConfig = true // <- 이 부분 추가
+    }
+
 
     defaultConfig {
         applicationId = "cse.ssuroom"
@@ -17,7 +23,13 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String","KAKAO_REST_API_KEY",
+            gradleLocalProperties(rootDir,providers).getProperty("KAKAO_REST_API_KEY"))
+
     }
+
+
 
     buildTypes {
         release {
@@ -67,4 +79,5 @@ dependencies {
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
 }
