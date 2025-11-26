@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 배경 -->
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle">
+            <corners android:radius="6dp"/>
+            <solid android:color="#E0E0E0"/> <!-- 연한 회색 -->
+        </shape>
+    </item>
+
+    <!-- 채워진 부분 -->
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape android:shape="rectangle">
+                <corners android:radius="6dp"/>
+                <solid android:color="#00C73C"/> <!-- 초록색 -->
+            </shape>
+        </clip>
+    </item>
+
+</layer-list>
