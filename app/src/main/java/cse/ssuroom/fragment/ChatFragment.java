@@ -64,7 +64,7 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnChatItemClic
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(adapter);
 
-        // swipe해서 채팅방 지우고
+        // swipe해서 채팅방 지우기
         new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder target) {
@@ -93,7 +93,7 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnChatItemClic
                 });
     }
 
-    private void loadChatRooms() {
+    public void loadChatRooms() {
         if (currentUser == null) {
             Toast.makeText(getContext(), "로그인이 필요합니다.", Toast.LENGTH_SHORT).show();
             return;

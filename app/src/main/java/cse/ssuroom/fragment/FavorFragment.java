@@ -36,7 +36,7 @@ public class FavorFragment extends Fragment {
     private PropertyListAdapter adapter;
     private List<Property> favoriteProperties = new ArrayList<>();
     private TextView emptyMessageTextView;
-    private SwipeRefreshLayout swipeRefreshLayout; // Declare SwipeRefreshLayout
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     private ShortTermRepository shortTermRepo;
     private LeaseTransferRepository leaseTransferRepo;
@@ -61,10 +61,10 @@ public class FavorFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         recyclerView = view.findViewById(R.id.recycler_view_favorites);
         emptyMessageTextView = view.findViewById(R.id.text_view_empty_favorites);
-        swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout); // Initialize SwipeRefreshLayout
+        swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout);
         setupRecyclerView();
         
-        swipeRefreshLayout.setOnRefreshListener(() -> { // Set OnRefreshListener
+        swipeRefreshLayout.setOnRefreshListener(() -> { // swipe리스너
             loadFavoriteProperties();
         });
 
@@ -77,7 +77,8 @@ public class FavorFragment extends Fragment {
         recyclerView.setAdapter(adapter);
     }
 
-    private void loadFavoriteProperties() {
+    // 네비게이션 selected에서 사용하기 위해 public으로 전환함
+    public void loadFavoriteProperties() {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
             updateAdapter(new ArrayList<>()); // 그냥 빈 리스트

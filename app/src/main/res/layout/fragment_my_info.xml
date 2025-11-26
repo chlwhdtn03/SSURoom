@@ -15,6 +15,7 @@
 
         <!-- Profile Section -->
         <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/profile_section"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingBottom="20dp">
@@ -31,10 +32,10 @@
                 android:id="@+id/profile_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
+                android:layout_marginStart="20dp"
                 android:text="홍길동"
                 android:textColor="@android:color/black"
-                android:textSize="18sp"
+                android:textSize="24sp"
                 android:textStyle="bold"
                 app:layout_constraintStart_toEndOf="@id/profile_image"
                 app:layout_constraintTop_toTopOf="@id/profile_image" />
@@ -43,13 +44,14 @@
                 android:id="@+id/profile_email"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+
                 android:text="hong@example.com"
+                app:layout_constraintBottom_toBottomOf="@+id/profile_image"
                 app:layout_constraintStart_toStartOf="@id/profile_name"
                 app:layout_constraintTop_toBottomOf="@id/profile_name" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <!-- My Listings Section -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -67,10 +69,27 @@
                     android:layout_height="wrap_content"
                     android:text="내가 올린 매물"
                     android:textColor="@android:color/black"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
 
-                <!-- Listing Item -->
-                <include layout="@layout/item_my_listing" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recycler_view_my_listings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    tools:listitem="@layout/item_favorite_list"
+                    tools:itemCount="2"/>
+
+                <TextView
+                    android:id="@+id/text_view_empty_listings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="아직 올린 매물이 없어요."
+                    android:layout_gravity="center"
+                    android:paddingTop="16dp"
+                    android:paddingBottom="16dp"
+                    android:visibility="visible"/>
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -111,7 +130,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:text="단기임대 매물 알림\n7~18만원, 1개월 이상"/>
+                        android:text="단기임대 매물 알림
+7~18만원, 1개월 이상"/>
                     <CheckBox
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -133,7 +153,8 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:text="계약양도 매물 알림\n보증금 500~1000만원"/>
+                        android:text="계약양도 매물 알림
+보증금 500~1000만원"/>
                     <CheckBox
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -178,60 +199,6 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- My Activity Section -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:orientation="horizontal">
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                app:cardCornerRadius="12dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp"
-                    android:gravity="center">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="12"/>
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="즐겨찾기"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                app:cardCornerRadius="12dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp"
-                    android:gravity="center">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="8"/>
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="최근 본 매물"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-        </LinearLayout>
 
         <!-- Links Section -->
         <LinearLayout

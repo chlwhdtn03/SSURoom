@@ -10,9 +10,12 @@ public class User {
     private String email;
     private String profileImageUrl; // 프로필 이미지 URL을 저장할 필드
     private List<String> favorites;
+    private List<String> uploadedProperties;
+
 
     public User() {
         this.favorites = new ArrayList<>();
+        this.uploadedProperties = new ArrayList<>();
     }
 
     // 데이터를 저장할 때 사용할 생성자
@@ -22,6 +25,7 @@ public class User {
         this.email = email;
         this.profileImageUrl = ""; // 처음에는 빈 값으로 초기화
         this.favorites = new ArrayList<>();
+        this.uploadedProperties = new ArrayList<>();
     }
 
     // Getter와 Setter
@@ -63,5 +67,13 @@ public class User {
 
     public void setFavorites(List<String> favorites) {
         this.favorites = favorites;
+    }
+
+    public List<String> getUploadedProperties() {
+        return uploadedProperties;
+    }
+
+    public void setUploadedProperties(List<String> uploadedProperties) {
+        this.uploadedProperties = uploadedProperties;
     }
 }

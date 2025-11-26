@@ -53,15 +53,18 @@ public class MainActivity extends AppCompatActivity {
             if (itemId == R.id.action_roomlist) {
                 changeFragment(roomlistFragment);
             } else if (itemId == R.id.action_favor) {
+                ((FavorFragment) favorFragment).loadFavoriteProperties();  // 즐겨찾기 내역 바로 반영될 수 있도록
                 changeFragment(favorFragment);
             }
             else if (itemId == R.id.action_map) {
                 changeFragment(mapFragment);
             }
             else if (itemId == R.id.action_chat) {
+                ((ChatFragment) chatFragment).loadChatRooms();
                 changeFragment(chatFragment);
             }
             else if (itemId == R.id.action_myinfo) {
+                ((MyInfoFragment) myInfoFragment).updateUserInfo();  // 내 정보 바로 반영될 수 있도록
                 changeFragment(myInfoFragment);
             }
             return true;
