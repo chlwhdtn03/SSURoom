@@ -1,27 +1,64 @@
 package cse.ssuroom.fragment;
 
+import android.content.Intent;
 import android.os.Bundle;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.google.ar.core.ArCoreApk;
+import com.google.ar.core.Config;
+import com.google.ar.core.Session;
+import com.google.ar.core.SharedCamera;
+import com.google.ar.core.exceptions.UnavailableApkTooOldException;
+import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
+import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
+import com.google.ar.core.exceptions.UnavailableException;
+import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
+import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import com.naver.maps.geometry.LatLng;
 import com.naver.maps.map.CameraPosition;
 import com.naver.maps.map.MapView;
 import com.naver.maps.map.NaverMap;
 import com.naver.maps.map.OnMapReadyCallback;
 import com.naver.maps.map.UiSettings;
+import com.naver.maps.map.clustering.Clusterer;
+import com.naver.maps.map.clustering.ClusterMarkerInfo;
+import com.naver.maps.map.clustering.LeafMarkerInfo;
+import com.naver.maps.map.overlay.Align;
+import com.naver.maps.map.overlay.Marker;
+import com.naver.maps.map.overlay.OverlayImage;
 import com.naver.maps.map.util.FusedLocationSource;
+import android.graphics.Color;
 
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import cse.ssuroom.ArActivity;
 import cse.ssuroom.R;
 import cse.ssuroom.bottomsheet.FilterBottomSheet;
 import cse.ssuroom.bottomsheet.UploadPropertyBottomSheet;
+import cse.ssuroom.database.LeaseTransfer;
+import cse.ssuroom.database.LeaseTransferRepository;
+import cse.ssuroom.database.Property;
+import cse.ssuroom.database.PropertyRepository;
+import cse.ssuroom.database.ShortTerm;
+import cse.ssuroom.database.ShortTermRepository;
 import cse.ssuroom.databinding.FragmentMapBinding;
+import cse.ssuroom.map.ItemKey;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -41,6 +78,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
+
+    private LeaseTransferRepository leaseRepo;
+    private ShortTermRepository shortRepo;
+
+    Clusterer<ItemKey> clusterer;
 
     public MapFragment() {
         // Required empty public constructor
@@ -70,6 +112,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         locationSource = new FusedLocationSource(this, LOCATION_PERMISSION_REQUEST_CODE);
 
+        // Repository 초기화
+        shortRepo = new ShortTermRepository();
+        leaseRepo = new LeaseTransferRepository();
+
         com.naver.maps.map.MapFragment mapFragment = (com.naver.maps.map.MapFragment) getChildFragmentManager().findFragmentById(R.id.map_fragment);
         mapFragment.getMapAsync(this);
     }
@@ -86,6 +132,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         // Inflate the layout for this fragment
         binding = FragmentMapBinding.inflate(inflater, container, false);
 
@@ -99,16 +146,161 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
         });
 
+        binding.ARBtn.setOnClickListener(view -> {
+            if(isARCoreSupportedAndUpToDate()) {
+                startActivity(new Intent(getActivity(), ArActivity.class));
+            }
+        });
+
+        maybeEnableArButton();
+
         return binding.getRoot();
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+
+    }
+
+    public void maybeEnableArButton() {
+        ArCoreApk.getInstance().checkAvailabilityAsync(getContext(), availability -> {
+            if (availability.isSupported()) {
+                binding.ARBtn.setVisibility(View.VISIBLE);
+                binding.ARBtn.setEnabled(true);
+            } else { // The device is unsupported or unknown.
+                binding.ARBtn.setVisibility(View.INVISIBLE);
+                binding.ARBtn.setEnabled(false);
+            }
+        });
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
+    // Verify that ARCore is installed and using the current version.
+    private boolean isARCoreSupportedAndUpToDate() {
+        ArCoreApk.Availability availability = ArCoreApk.getInstance().checkAvailability(getContext());
+        switch (availability) {
+            case SUPPORTED_INSTALLED:
+                return true;
+
+            case SUPPORTED_APK_TOO_OLD:
+            case SUPPORTED_NOT_INSTALLED:
+                try {
+                    // Request ARCore installation or update if needed.
+                    ArCoreApk.InstallStatus installStatus = ArCoreApk.getInstance().requestInstall(getActivity(), true);
+                    switch (installStatus) {
+                        case INSTALL_REQUESTED:
+                            Log.i("[AR]", "ARCore installation requested.");
+                            return false;
+                        case INSTALLED:
+                            return true;
+                    }
+                } catch (UnavailableException e) {
+                    Log.e("[AR]", "ARCore not installed", e);
+                }
+                return false;
+
+            case UNSUPPORTED_DEVICE_NOT_CAPABLE:
+                // This device is not supported for AR.
+                return false;
+
+            case UNKNOWN_CHECKING:
+                // ARCore is checking the availability with a remote query.
+                // This function should be called again after waiting 200 ms to determine the query result.
+            case UNKNOWN_ERROR:
+            case UNKNOWN_TIMED_OUT:
+                // There was an error checking for AR availability. This may be due to the device being offline.
+                // Handle the error appropriately.
+        }
+        return false;
+    }
     @Override
     public void onMapReady(@NonNull NaverMap naverMap) {
         naverMap.setCameraPosition(new CameraPosition(new LatLng(37.4959, 126.9577), 15));
         naverMap.setLocationSource(locationSource);
         UiSettings us = naverMap.getUiSettings();
-
         us.setLocationButtonEnabled(true);
+
+        Map<ItemKey, Object> keyTagMap = new HashMap<>();
+        AtomicBoolean leaseLoaded = new AtomicBoolean(false);
+        AtomicBoolean shortLoaded = new AtomicBoolean(false);
+        AtomicInteger idCounter = new AtomicInteger(0);
+
+        Runnable checkCompletion = () -> {
+            if (leaseLoaded.get() && shortLoaded.get()) {
+                if (clusterer != null) {
+                    clusterer.setMap(null);
+                }
+                
+                Clusterer.Builder<ItemKey> builder = new Clusterer.Builder<ItemKey>();
+                builder.clusterMarkerUpdater((ClusterMarkerInfo info, Marker marker) -> {
+                    marker.setIcon(OverlayImage.fromResource(R.drawable.bg_circle_button));
+                    marker.setCaptionText(String.valueOf(info.getSize()));
+                    marker.setCaptionAligns(Align.Center);
+                    marker.setCaptionColor(Color.BLACK);
+                    marker.setCaptionHaloColor(Color.parseColor("#00000000"));
+                    marker.setCaptionTextSize(20);
+                });
+                
+                builder.leafMarkerUpdater((LeafMarkerInfo info, Marker marker) -> {
+                    ItemKey key = (ItemKey) info.getKey();
+                    Object tag = info.getTag();
+                    
+                    marker.setCaptionAligns(Align.Top);
+                    marker.setCaptionTextSize(16);
+                    
+                    if (key.getType() == ItemKey.Type.Lease) {
+                        marker.setIcon(OverlayImage.fromResource(R.drawable.leaseicon));
+                        if (tag instanceof LeaseTransfer) {
+                            LeaseTransfer lease = (LeaseTransfer) tag;
+                            marker.setCaptionText(lease.getPricing().get("deposit") + "/" + lease.getPricing().get("monthlyRent"));
+                        }
+                    } else if (key.getType() == ItemKey.Type.Short) {
+                        marker.setIcon(OverlayImage.fromResource(R.drawable.shorticon));
+                        if (tag instanceof ShortTerm) {
+                            ShortTerm term = (ShortTerm) tag;
+                            marker.setCaptionText(String.valueOf(term.getPricing().get("weeklyPrice")));
+                        }
+                    }
+                });
+
+                clusterer = builder.build();
+                clusterer.addAll(keyTagMap);
+                clusterer.setMap(naverMap);
+            }
+        };
+
+        leaseRepo.findAll((list) -> {
+            for(LeaseTransfer lease : list) {
+                try {
+                    LatLng pos = new LatLng((Double) lease.getLocation().get("latitude"), (Double) lease.getLocation().get("longitude"));
+                    ItemKey key = new ItemKey(idCounter.getAndIncrement(), pos, ItemKey.Type.Lease);
+                    keyTagMap.put(key, lease);
+                } catch (Exception e) {
+                    Log.e("LeaseRepo", "필수 데이터 없음");
+                }
+            }
+            leaseLoaded.set(true);
+            checkCompletion.run();
+        });
+
+        shortRepo.findAll((list) -> {
+            for(ShortTerm lease : list) {
+                try {
+                    LatLng pos = new LatLng((Double) lease.getLocation().get("latitude"), (Double) lease.getLocation().get("longitude"));
+                    ItemKey key = new ItemKey(idCounter.getAndIncrement(), pos, ItemKey.Type.Short);
+                    keyTagMap.put(key, lease);
+                } catch (Exception e) {
+                    Log.e("ShortRepo", "필수 데이터 없음");
+                }
+            }
+            shortLoaded.set(true);
+            checkCompletion.run();
+        });
     }
 
 }

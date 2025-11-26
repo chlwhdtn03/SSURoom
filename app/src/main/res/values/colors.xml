@@ -16,4 +16,21 @@
     <color name="ssu_blue_background">#E3F2FD</color>
     <color name="ssu_grey_divider">#E0E0E0</color>
     <color name="ssu_grey_background">#F5F5F5</color>
+    <color name="grey_light">#E0E0E0</color>
+    <color name="grey_dark">#9E9E9E</color>
+
+    <!-- 점수 텍스트 -->
+    <color name="orange">#FF8C42</color> <!-- 전체 점수 -->
+    <color name="blue_primary">#3B82F6</color> <!-- 지하철 접근성 -->
+    <color name="green_primary">#22C55E</color> <!-- 편의점 -->
+    <color name="purple_primary">#A855F7</color> <!-- 코인세탁방 -->
+    <color name="orange_primary">#F97316</color> <!-- 대형마트 -->
+
+    <!-- 카드 배경 -->
+    <color name="card_background">#FFF8F0</color> <!-- 부드러운 배경 -->
+
+    <!-- 텍스트 일반 -->
+    <color name="text_primary">#111827</color>
+    <color name="text_secondary">#6B7280</color>
+
 </resources>

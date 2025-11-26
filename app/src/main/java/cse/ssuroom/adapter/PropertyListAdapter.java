@@ -125,7 +125,7 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
             if (property.getScores() != null) {
                 Object overallScore = property.getScores().get("overall");
                 if (overallScore != null) {
-                    roomScore.setText(String.format("%.0f", ((Number) overallScore).doubleValue() * 100));
+                    roomScore.setText(String.format("%.0f", ((Number) overallScore).doubleValue()));
                 } else {
                     roomScore.setText("0");
                 }

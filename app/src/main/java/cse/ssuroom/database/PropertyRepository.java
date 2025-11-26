@@ -9,6 +9,7 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -44,7 +45,6 @@ public class PropertyRepository<T extends Property> {
                     listener.onGenerated(null);
                 });
     }
-
     // R: 특정 매물 조회
     public void findById(String propertyId, OnPropertyLoaded<T> listener) {
         db.collection(collectionName)

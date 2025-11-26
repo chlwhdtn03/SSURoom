@@ -8,6 +8,8 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,15 +20,19 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.button.MaterialButton;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 import cse.ssuroom.MainActivity;
 import cse.ssuroom.R;
@@ -50,6 +56,14 @@ public class RoomDetailFragment extends DialogFragment {   // ⭐ BottomSheet �
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
+    private TextView tvTotalScore;
+
+    private ProgressBar pbSubway, pbStore, pbLaundry, pbMart;
+    private TextView tvSubwayDesc, tvStoreDesc, tvLaundryDesc, tvMartDesc;
+
+    private TextView tvMoveInDate;
+    private TextView tvMoveOutDate;
+    private LinearLayout layoutMoveOut;
 
     public static RoomDetailFragment newInstance(String roomId) {
         RoomDetailFragment fragment = new RoomDetailFragment();
@@ -58,6 +72,7 @@ public class RoomDetailFragment extends DialogFragment {   // ⭐ BottomSheet �
         fragment.setArguments(args);
         return fragment;
     }
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -121,6 +136,19 @@ public class RoomDetailFragment extends DialogFragment {   // ⭐ BottomSheet �
         btnClose = view.findViewById(R.id.btnClose);
         btnChat = view.findViewById(R.id.btnChat);
         ivHostProfile = view.findViewById(R.id.ivHostProfile);
+        tvTotalScore = view.findViewById(R.id.tvTotalScore);
+
+        pbSubway = view.findViewById(R.id.pbSubway);
+
+        pbStore = view.findViewById(R.id.pbStore);
+
+        pbLaundry = view.findViewById(R.id.pbLaundry);
+
+        pbMart = view.findViewById(R.id.pbMart);
+
+        tvMoveInDate = view.findViewById(R.id.tvMoveInDate);
+        tvMoveOutDate = view.findViewById(R.id.tvMoveOutDate);
+        layoutMoveOut = view.findViewById(R.id.layoutMoveOutDate);
     }
 
     private void loadRoomDetails() {
@@ -150,10 +178,27 @@ public class RoomDetailFragment extends DialogFragment {   // ⭐ BottomSheet �
     }
 
     private void displayPropertyData(com.google.firebase.firestore.DocumentSnapshot documentSnapshot) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd", Locale.getDefault());
         String title = documentSnapshot.getString("title");
+        Object moveInObj = documentSnapshot.get("moveInDate");
+        Object moveOutObj = documentSnapshot.get("moveOutDate");
+        String rentalType = "";
+        String moveInDateStr = "";
+        String moveOutDateStr = "";
 
         // 주소
         String address = "";
+
+        if (moveInObj instanceof Timestamp) {
+            Date moveInDate = ((Timestamp) moveInObj).toDate();
+            moveInDateStr = sdf.format(moveInDate);
+        }
+
+        if (moveOutObj instanceof Timestamp) {
+            Date moveOutDate = ((Timestamp) moveOutObj).toDate();
+            moveOutDateStr = sdf.format(moveOutDate);
+        }
+
         if (documentSnapshot.contains("location")) {
             Object locationObj = documentSnapshot.get("location");
             if (locationObj instanceof java.util.Map) {
@@ -202,6 +247,39 @@ public class RoomDetailFragment extends DialogFragment {   // ⭐ BottomSheet �
         }
 
         checkFavoriteStatus();
+        //score 정보 가졍괴
+        Object scoresObj = documentSnapshot.get("scores");
+        if (scoresObj instanceof java.util.Map) {
+            java.util.Map<String, Object> scores = (java.util.Map<String, Object>) scoresObj;
+
+            Long overall = getLongValue(scores.get("overall"));
+            Long subway = getLongValue(scores.get("subway"));
+            Long convenience = getLongValue(scores.get("convenience"));
+            Long laundry = getLongValue(scores.get("laundry"));
+            Long mart = getLongValue(scores.get("mart"));
+
+            if (overall != null) tvTotalScore.setText(String.valueOf(overall.intValue()) + "/100");
+            if (subway != null) pbSubway.setProgress(subway.intValue());
+            if (convenience != null) pbStore.setProgress(convenience.intValue());
+            if (laundry != null) pbLaundry.setProgress(laundry.intValue());
+            if (mart != null) pbMart.setProgress(mart.intValue());
+        }
+        if (!moveInDateStr.isEmpty()) {
+            tvMoveInDate.setText(moveInDateStr);
+            tvMoveInDate.setVisibility(View.VISIBLE);
+        } else {
+            tvMoveInDate.setVisibility(View.GONE);
+        }
+
+
+// 단기임대일 때만 종료 날짜 표시
+        if ("short_term".equals(rentalType) && moveOutDateStr != null && !moveOutDateStr.isEmpty()) {
+            tvMoveOutDate.setText(moveOutDateStr);
+            layoutMoveOut.setVisibility(View.VISIBLE);
+        } else {
+            layoutMoveOut.setVisibility(View.GONE);
+        }
+
     }
 
     private void loadHostInfo(String userId) {
@@ -378,6 +456,12 @@ public class RoomDetailFragment extends DialogFragment {   // ⭐ BottomSheet �
             }
         })
         .addOnFailureListener(e -> Log.e(TAG, "Error fetching user document for favorite status", e));
+    }
+    private Long getLongValue(Object obj) {
+        if (obj instanceof Number) {
+            return ((Number) obj).longValue();
+        }
+        return null;
     }
 }
 
