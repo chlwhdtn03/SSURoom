@@ -9,14 +9,24 @@ public class ItemKey implements ClusteringKey {
     private final int id;
     @NonNull
     private final LatLng position;
+    private final ItemKey.Type type;
 
-    public ItemKey(int id, @NonNull LatLng position) {
+    public ItemKey(int id, @NonNull LatLng position, ItemKey.Type type) {
         this.id = id;
         this.position = position;
+        this.type = type;
+    }
+
+    public enum Type {
+        Lease, Short
     }
 
     public int getId() {
         return id;
+    }
+
+    public Type getType() {
+        return type;
     }
 
     @Override
