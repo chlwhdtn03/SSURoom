@@ -6,15 +6,12 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 
-import cse.ssuroom.database.LeaseTransfer;
-import cse.ssuroom.database.LeaseTransferRepository;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.messaging.FirebaseMessaging;
 
-import cse.ssuroom.database.ShortTermRepository;
 import cse.ssuroom.fragment.LoginFragment;
 
 public class LoginActivity extends AppCompatActivity {
@@ -44,10 +41,39 @@ public class LoginActivity extends AppCompatActivity {
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
         if (currentUser != null) {
-            // 사용자가 이미 로그인되어 있으면 MainActivity로 즉시 이동
-            goToMainActivity();
+            // 사용자가 이미 로그인되어 있으면 토큰을 업데이트하고 MainActivity로 이동
+            updateFCMTokenAndGoToMain(currentUser);
         }
         // 로그인되어 있지 않으면 LoginFragment 그대로
+    }
+
+    private void updateFCMTokenAndGoToMain(FirebaseUser user) {
+        String userId = user.getUid();
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.w("LoginActivity", "Fetching FCM registration token failed", task.getException());
+                        // 토큰 가져오기 실패 시, 일단 그냥 메인으로 이동
+                        goToMainActivity();
+                        return;
+                    }
+
+                    // Get new FCM registration token
+                    String token = task.getResult();
+
+                    // Update token in Firestore
+                    FirebaseFirestore.getInstance().collection("users").document(userId)
+                            .update("fcmToken", token)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d("LoginActivity", "FCM token updated successfully on auto-login.");
+                                goToMainActivity();
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.w("LoginActivity", "Error updating FCM token on auto-login", e);
+                                // 토큰 업데이트 실패 시, 일단 그냥 메인으로 이동
+                                goToMainActivity();
+                            });
+                });
     }
 
 

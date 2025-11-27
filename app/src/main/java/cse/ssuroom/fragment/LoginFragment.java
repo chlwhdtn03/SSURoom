@@ -21,8 +21,10 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
-import com.google.android.gms.tasks.OnCanceledListener;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import cse.ssuroom.MainActivity;
 import cse.ssuroom.R;
@@ -103,20 +105,52 @@ public class LoginFragment extends Fragment {
                 .addOnCompleteListener(requireActivity(), task -> {
                     if (task.isSuccessful()) {
                         Log.d("LoginFragment", "signInWithEmail:success");
-                        Toast.makeText(getContext(), "로그인 성공", Toast.LENGTH_SHORT).show();
-                        gotoMainActivity();
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        if (user != null) {
+                            updateFCMToken(user.getUid());
+                        } else {
+                            Toast.makeText(getContext(), "로그인 성공", Toast.LENGTH_SHORT).show();
+                            gotoMainActivity();
+                        }
                     }
                     else{
                         Log.w("LoginFragment", "signInWithEmail:failure", task.getException());
-                        Toast.makeText(getContext(), "이메일 또는 비밀번호를 확인해주세요" + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "이메일 또는 비밀번호를 확인해주세요", Toast.LENGTH_SHORT).show();
                     }
 
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("ERROR", e.getLocalizedMessage());
-                    e.printStackTrace();
                 });
     }
+
+    private void updateFCMToken(String userId) {
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.w("LoginFragment", "Fetching FCM registration token failed", task.getException());
+                        // 토큰 가져오기 실패 시, 일단 그냥 메인으로 이동
+                        Toast.makeText(getContext(), "로그인 성공 (토큰 갱신 실패)", Toast.LENGTH_SHORT).show();
+                        gotoMainActivity();
+                        return;
+                    }
+
+                    // Get new FCM registration token
+                    String token = task.getResult();
+
+                    // Update token in Firestore
+                    FirebaseFirestore.getInstance().collection("users").document(userId)
+                            .update("fcmToken", token)
+                            .addOnSuccessListener(aVoid -> {
+                                Log.d("LoginFragment", "FCM token updated successfully");
+                                Toast.makeText(getContext(), "로그인 성공", Toast.LENGTH_SHORT).show();
+                                gotoMainActivity();
+                            })
+                            .addOnFailureListener(e -> {
+                                Log.w("LoginFragment", "Error updating FCM token", e);
+                                Toast.makeText(getContext(), "로그인 성공 (토큰 갱신 실패)", Toast.LENGTH_SHORT).show();
+                                gotoMainActivity();
+                            });
+                });
+    }
+
     private void gotoMainActivity(){
         // Main 액비를 실행하는데 clear task 그 전 스택은 모두 지우고, New task 마치 앱의 처음 화면인 것 처럼 실행
         startActivity(new Intent(getActivity(), MainActivity.class)
