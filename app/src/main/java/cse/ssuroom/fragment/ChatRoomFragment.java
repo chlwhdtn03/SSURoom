@@ -60,6 +60,8 @@ public class ChatRoomFragment extends Fragment {
     private FirebaseUser currentUser;
     private CollectionReference messagesCollection;
 
+    private Thread thread;
+
     public static ChatRoomFragment newInstance(String chatRoomId) {
         ChatRoomFragment fragment = new ChatRoomFragment();
         Bundle args = new Bundle();

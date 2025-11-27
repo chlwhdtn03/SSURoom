@@ -16,6 +16,7 @@ import cse.ssuroom.fragment.FavorFragment;
 import cse.ssuroom.fragment.MapFragment;
 import cse.ssuroom.fragment.MyInfoFragment;
 import cse.ssuroom.fragment.RoomlistFragment;
+import cse.ssuroom.notification.NotificationHelper;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -35,6 +36,9 @@ public class MainActivity extends AppCompatActivity {
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        // 알림 채널 생성
+        NotificationHelper.createNotificationChannel(this);
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
