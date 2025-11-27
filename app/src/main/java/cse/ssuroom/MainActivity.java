@@ -16,6 +16,7 @@ import cse.ssuroom.fragment.FavorFragment;
 import cse.ssuroom.fragment.MapFragment;
 import cse.ssuroom.fragment.MyInfoFragment;
 import cse.ssuroom.fragment.RoomlistFragment;
+import cse.ssuroom.notification.NotificationHelper;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,6 +37,9 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // 알림 채널 생성
+        NotificationHelper.createNotificationChannel(this);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
@@ -55,15 +59,18 @@ public class MainActivity extends AppCompatActivity {
             if (itemId == R.id.action_roomlist) {
                 changeFragment(roomlistFragment);
             } else if (itemId == R.id.action_favor) {
+                ((FavorFragment) favorFragment).loadFavoriteProperties();  // 즐겨찾기 내역 바로 반영될 수 있도록
                 changeFragment(favorFragment);
             }
             else if (itemId == R.id.action_map) {
                 changeFragment(mapFragment);
             }
             else if (itemId == R.id.action_chat) {
+                ((ChatFragment) chatFragment).loadChatRooms();
                 changeFragment(chatFragment);
             }
             else if (itemId == R.id.action_myinfo) {
+                ((MyInfoFragment) myInfoFragment).updateUserInfo();  // 내 정보 바로 반영될 수 있도록
                 changeFragment(myInfoFragment);
             }
             return true;
@@ -78,6 +85,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void setBottomNavigationVisibility(int visibility) {
         binding.bottomNavigationView.setVisibility(visibility);
+    }
+
+    public void navigateToMap(double lat, double lng) {
+        binding.bottomNavigationView.setSelectedItemId(R.id.action_map);
+        mapFragment.moveCamera(lat, lng);
     }
 
 }

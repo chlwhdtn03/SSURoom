@@ -36,7 +36,7 @@ public class FavorFragment extends Fragment {
     private PropertyListAdapter adapter;
     private List<Property> favoriteProperties = new ArrayList<>();
     private TextView emptyMessageTextView;
-    private SwipeRefreshLayout swipeRefreshLayout; // Declare SwipeRefreshLayout
+    private SwipeRefreshLayout swipeRefreshLayout;
 
     private ShortTermRepository shortTermRepo;
     private LeaseTransferRepository leaseTransferRepo;
@@ -61,10 +61,10 @@ public class FavorFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         recyclerView = view.findViewById(R.id.recycler_view_favorites);
         emptyMessageTextView = view.findViewById(R.id.text_view_empty_favorites);
-        swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout); // Initialize SwipeRefreshLayout
+        swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout);
         setupRecyclerView();
         
-        swipeRefreshLayout.setOnRefreshListener(() -> { // Set OnRefreshListener
+        swipeRefreshLayout.setOnRefreshListener(() -> { // swipe리스너
             loadFavoriteProperties();
         });
 
@@ -72,12 +72,37 @@ public class FavorFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        adapter = new PropertyListAdapter(getContext(), favoriteProperties, R.layout.item_favorite_list);
+        adapter = new PropertyListAdapter(getContext(), favoriteProperties, R.layout.item_favorite_list, property -> {
+            if (property.getLocation() != null) {
+                try {
+                    Object latObj = property.getLocation().get("latitude");
+                    Object lngObj = property.getLocation().get("longitude");
+
+                    if (latObj instanceof Number && lngObj instanceof Number) {
+                        double lat = ((Number) latObj).doubleValue();
+                        double lng = ((Number) lngObj).doubleValue();
+
+                        if (getActivity() instanceof cse.ssuroom.MainActivity) {
+                            ((cse.ssuroom.MainActivity) getActivity()).navigateToMap(lat, lng);
+                        }
+                    } else {
+                        Log.e("FavorFragment", "Invalid location data types");
+                        Toast.makeText(getContext(), "위치 정보 형식이 올바르지 않습니다.", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Log.e("FavorFragment", "Error navigating to map", e);
+                    Toast.makeText(getContext(), "지도 이동 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(getContext(), "위치 정보가 없습니다.", Toast.LENGTH_SHORT).show();
+            }
+        });
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(adapter);
     }
 
-    private void loadFavoriteProperties() {
+    // 네비게이션 selected에서 사용하기 위해 public으로 전환함
+    public void loadFavoriteProperties() {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
             updateAdapter(new ArrayList<>()); // 그냥 빈 리스트

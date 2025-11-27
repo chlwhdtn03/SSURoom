@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -74,7 +75,31 @@ public class RoomlistFragment extends Fragment {
         leaseTransferRepo = new LeaseTransferRepository();
 
         // RecyclerView 설정
-        adapter = new PropertyListAdapter(requireContext(), propertyList, R.layout.item_room_list);
+        adapter = new PropertyListAdapter(requireContext(), propertyList, R.layout.item_room_list, property -> {
+            if (property.getLocation() != null) {
+                try {
+                    Object latObj = property.getLocation().get("latitude");
+                    Object lngObj = property.getLocation().get("longitude");
+                    
+                    if (latObj instanceof Number && lngObj instanceof Number) {
+                        double lat = ((Number) latObj).doubleValue();
+                        double lng = ((Number) lngObj).doubleValue();
+                        
+                        if (getActivity() instanceof cse.ssuroom.MainActivity) {
+                            ((cse.ssuroom.MainActivity) getActivity()).navigateToMap(lat, lng);
+                        }
+                    } else {
+                        Log.e(TAG, "Invalid location data types: lat=" + latObj + ", lng=" + lngObj);
+                        Toast.makeText(getContext(), "위치 정보 형식이 올바르지 않습니다.", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error navigating to map", e);
+                    Toast.makeText(getContext(), "지도 이동 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(getContext(), "위치 정보가 없습니다.", Toast.LENGTH_SHORT).show();
+            }
+        });
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setAdapter(adapter);
 

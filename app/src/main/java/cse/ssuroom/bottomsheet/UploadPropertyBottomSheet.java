@@ -24,6 +24,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -923,8 +925,15 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
 
     private void handleSaveResult(String propertyId) {
         binding.btnSubmit.setEnabled(true);
-
+        // 내가 올린 매물 Firebase User에 등록
         if (propertyId != null) {
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+            if (currentUser != null) {
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                db.collection("users").document(currentUser.getUid())
+                        .update("uploadedProperties", FieldValue.arrayUnion(propertyId));
+            }
+
             Toast.makeText(requireContext(), "매물이 성공적으로 등록되었습니다!", Toast.LENGTH_LONG).show();
             dismiss();
         } else {
