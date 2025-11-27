@@ -1,9 +1,16 @@
 package cse.ssuroom;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -29,6 +36,15 @@ public class MainActivity extends AppCompatActivity {
     private Fragment activeFragment = roomlistFragment;
     private ActivityMainBinding binding;
 
+    // 알림 권한 요청 런처
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                } else {
+                    Toast.makeText(this, "알림 권한을 거부하시면 채팅 알림을 받을 수 없습니다.", Toast.LENGTH_SHORT).show();
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,6 +55,9 @@ public class MainActivity extends AppCompatActivity {
 
         // 알림 채널 생성
         NotificationHelper.createNotificationChannel(this);
+
+        // 알림 권한 요청
+        requestNotificationPermission();
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -59,22 +78,33 @@ public class MainActivity extends AppCompatActivity {
             if (itemId == R.id.action_roomlist) {
                 changeFragment(roomlistFragment);
             } else if (itemId == R.id.action_favor) {
-                ((FavorFragment) favorFragment).loadFavoriteProperties();  // 즐겨찾기 내역 바로 반영될 수 있도록
+                favorFragment.loadFavoriteProperties();  // 즐겨찾기 내역 바로 반영될 수 있도록
                 changeFragment(favorFragment);
             }
             else if (itemId == R.id.action_map) {
                 changeFragment(mapFragment);
             }
             else if (itemId == R.id.action_chat) {
-                ((ChatFragment) chatFragment).loadChatRooms();
+                chatFragment.loadChatRooms();
                 changeFragment(chatFragment);
             }
             else if (itemId == R.id.action_myinfo) {
-                ((MyInfoFragment) myInfoFragment).updateUserInfo();  // 내 정보 바로 반영될 수 있도록
+                myInfoFragment.updateUserInfo();  // 내 정보 바로 반영될 수 있도록
                 changeFragment(myInfoFragment);
             }
             return true;
         });
+    }
+
+    private void requestNotificationPermission() {
+        // Android 13 (API 33) 이상에서만 필요
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // 이미 권한이 있는지 확인
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                // 권한이 없다면, 사용자에게 권한 요청 팝업을 띄움
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
     }
 
     private void changeFragment(Fragment fragment) {
@@ -82,9 +112,9 @@ public class MainActivity extends AppCompatActivity {
         fragmentManager.beginTransaction().hide(activeFragment).show(fragment).commit();
         activeFragment = fragment;
     }
-
-    public void setBottomNavigationVisibility(int visibility) {
-        binding.bottomNavigationView.setVisibility(visibility);
+    public void navigateToMap(double lat, double lng) {
+        binding.bottomNavigationView.setSelectedItemId(R.id.action_map);
+        mapFragment.moveCamera(lat, lng);
     }
 
 }
