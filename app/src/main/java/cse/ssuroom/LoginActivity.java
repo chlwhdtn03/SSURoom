@@ -21,9 +21,19 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
 
         mAuth = FirebaseAuth.getInstance();
+
+        // 화면을 그리기 전에 먼저 로그인 상태 확인
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null) {
+            // 사용자가 이미 로그인되어 있으면 UI를 보여주지 않고 바로 토큰 업데이트 및 메인으로 이동
+            updateFCMTokenAndGoToMain(currentUser);
+            return; // LoginActivity의 UI를 렌더링하지 않도록 여기서 종료
+        }
+
+        // 로그인 되어있지 않은 경우에만 로그인 화면을 보여줌
+        setContentView(R.layout.activity_login);
 
         // 완전 처음실행인 경우 loginFragment 화면 보여주기
         if (savedInstanceState == null) {
@@ -31,20 +41,6 @@ public class LoginActivity extends AppCompatActivity {
                     .replace(R.id.fragment_container, new LoginFragment())
                     .commit();
         }
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        // 현재 로그인된 사용자가 있는지 확인
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-
-        if (currentUser != null) {
-            // 사용자가 이미 로그인되어 있으면 토큰을 업데이트하고 MainActivity로 이동
-            updateFCMTokenAndGoToMain(currentUser);
-        }
-        // 로그인되어 있지 않으면 LoginFragment 그대로
     }
 
     private void updateFCMTokenAndGoToMain(FirebaseUser user) {
