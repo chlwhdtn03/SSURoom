@@ -107,10 +107,6 @@ public class ChatRoomFragment extends Fragment {
 
         backButton.setOnClickListener(v -> getParentFragmentManager().popBackStack());
 
-        if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).setBottomNavigationVisibility(View.GONE);
-        }
-
         setupRecyclerView();
         setupSendButton();
         loadChatRoomDetails();
@@ -120,9 +116,6 @@ public class ChatRoomFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).setBottomNavigationVisibility(View.VISIBLE);
-        }
     }
 
     private void setupRecyclerView() {

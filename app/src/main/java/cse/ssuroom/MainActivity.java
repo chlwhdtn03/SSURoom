@@ -1,9 +1,16 @@
 package cse.ssuroom;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -27,18 +34,29 @@ public class MainActivity extends AppCompatActivity {
     private final ChatFragment chatFragment = new ChatFragment();
     private final MyInfoFragment myInfoFragment = new MyInfoFragment();
     private Fragment activeFragment = roomlistFragment;
-    private ActivityMainBinding binding;
+
+    // 알림 권한 요청 런처
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                } else {
+                    Toast.makeText(this, "알림을 받으려면 권한을 허용해야 합니다.", Toast.LENGTH_SHORT).show();
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
 
-        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        ActivityMainBinding binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         // 알림 채널 생성
         NotificationHelper.createNotificationChannel(this);
+
+        // 알림 권한 요청
+        requestNotificationPermission();
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -50,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
         fragmentManager.beginTransaction().add(R.id.screen, favorFragment, "favor").hide(favorFragment).commit();
         fragmentManager.beginTransaction().add(R.id.screen, mapFragment, "map").hide(mapFragment).commit();
         fragmentManager.beginTransaction().add(R.id.screen, chatFragment, "chat").hide(chatFragment).commit();
-        fragmentManager.beginTransaction().add(R.id.screen, roomlistFragment, "roomlist").commit();
+        fragmentManager.beginTransaction().add(R.id.screen, roomlistFragment, "room list").commit();
 
 
         changeFragment(roomlistFragment);
@@ -59,32 +77,38 @@ public class MainActivity extends AppCompatActivity {
             if (itemId == R.id.action_roomlist) {
                 changeFragment(roomlistFragment);
             } else if (itemId == R.id.action_favor) {
-                ((FavorFragment) favorFragment).loadFavoriteProperties();  // 즐겨찾기 내역 바로 반영될 수 있도록
+                favorFragment.loadFavoriteProperties();  // 즐겨찾기 내역 바로 반영될 수 있도록
                 changeFragment(favorFragment);
             }
             else if (itemId == R.id.action_map) {
                 changeFragment(mapFragment);
             }
             else if (itemId == R.id.action_chat) {
-                ((ChatFragment) chatFragment).loadChatRooms();
+                chatFragment.loadChatRooms();
                 changeFragment(chatFragment);
             }
             else if (itemId == R.id.action_myinfo) {
-                ((MyInfoFragment) myInfoFragment).updateUserInfo();  // 내 정보 바로 반영될 수 있도록
+                myInfoFragment.updateUserInfo();  // 내 정보 바로 반영될 수 있도록
                 changeFragment(myInfoFragment);
             }
             return true;
         });
     }
 
+    private void requestNotificationPermission() {
+        // Android 13 (API 33) 이상에서만 필요
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                // 권한이 없다면, 사용자에게 권한 요청 팝업을 띄움
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
+    }
+
     private void changeFragment(Fragment fragment) {
         // 현재 보였던 frag는 가리고, 새로운 frag는 보이게
         fragmentManager.beginTransaction().hide(activeFragment).show(fragment).commit();
         activeFragment = fragment;
-    }
-
-    public void setBottomNavigationVisibility(int visibility) {
-        binding.bottomNavigationView.setVisibility(visibility);
     }
 
 }
