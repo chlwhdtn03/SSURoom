@@ -329,7 +329,8 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
             binding.layoutWeeklyPrice.setVisibility(View.VISIBLE);
             binding.layoutDepositMonthly.setVisibility(View.GONE);
 
-            binding.layoutMoveOutDate.setVisibility(View.VISIBLE);
+            // 🔥 종료 날짜 보이기
+            binding.layoutMoveOutContainer.setVisibility(View.VISIBLE);
 
         } else {
             binding.cardShortTerm.setStrokeColor(grey);
@@ -343,6 +344,7 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
             binding.layoutWeeklyPrice.setVisibility(View.GONE);
             binding.layoutDepositMonthly.setVisibility(View.VISIBLE);
 
+            // 🔥 종료 날짜 감추기
             binding.layoutMoveOutContainer.setVisibility(View.GONE);
 
 

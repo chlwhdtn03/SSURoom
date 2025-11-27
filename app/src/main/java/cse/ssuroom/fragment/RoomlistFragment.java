@@ -19,6 +19,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +51,8 @@ public class RoomlistFragment extends Fragment {
     private List<Property> propertyList = new ArrayList<>();
     private List<Property> allProperties = new ArrayList<>(); // 전체 데이터 저장
 
+
+
     // 필터 값
     private float filterMinScore = 0;
     private float filterMaxScore = 100;
@@ -56,6 +60,8 @@ public class RoomlistFragment extends Fragment {
     private float filterMaxPrice = Float.MAX_VALUE;
     private float filterMinDuration = 1;
     private float filterMaxDuration = 52;
+
+
 
     @Nullable
     @Override
@@ -70,36 +76,45 @@ public class RoomlistFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recycler_view);
         filterButton = view.findViewById(R.id.filter_button);
 
+
         // Repository 초기화
         shortTermRepo = new ShortTermRepository();
         leaseTransferRepo = new LeaseTransferRepository();
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        String currentUid = currentUser != null ? currentUser.getUid() : null;
 
         // RecyclerView 설정
-        adapter = new PropertyListAdapter(requireContext(), propertyList, R.layout.item_room_list, property -> {
-            if (property.getLocation() != null) {
-                try {
-                    Object latObj = property.getLocation().get("latitude");
-                    Object lngObj = property.getLocation().get("longitude");
-                    
-                    if (latObj instanceof Number && lngObj instanceof Number) {
-                        double lat = ((Number) latObj).doubleValue();
-                        double lng = ((Number) lngObj).doubleValue();
-                        
-                        if (getActivity() instanceof cse.ssuroom.MainActivity) {
-                            ((cse.ssuroom.MainActivity) getActivity()).navigateToMap(lat, lng);
+        adapter = new PropertyListAdapter(
+                requireContext(),
+                propertyList,
+                R.layout.item_room_list,
+                currentUid, // 🔹 현재 UID
+                property -> { // 🔹 지도 클릭 리스너
+                    if (property.getLocation() != null) {
+                        try {
+                            Object latObj = property.getLocation().get("latitude");
+                            Object lngObj = property.getLocation().get("longitude");
+
+                            if (latObj instanceof Number && lngObj instanceof Number) {
+                                double lat = ((Number) latObj).doubleValue();
+                                double lng = ((Number) lngObj).doubleValue();
+
+                                if (getActivity() instanceof cse.ssuroom.MainActivity) {
+                                    ((cse.ssuroom.MainActivity) getActivity()).navigateToMap(lat, lng);
+                                }
+                            } else {
+                                Log.e(TAG, "Invalid location data types: lat=" + latObj + ", lng=" + lngObj);
+                                Toast.makeText(getContext(), "위치 정보 형식이 올바르지 않습니다.", Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error navigating to map", e);
+                            Toast.makeText(getContext(), "지도 이동 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        Log.e(TAG, "Invalid location data types: lat=" + latObj + ", lng=" + lngObj);
-                        Toast.makeText(getContext(), "위치 정보 형식이 올바르지 않습니다.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "위치 정보가 없습니다.", Toast.LENGTH_SHORT).show();
                     }
-                } catch (Exception e) {
-                    Log.e(TAG, "Error navigating to map", e);
-                    Toast.makeText(getContext(), "지도 이동 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
                 }
-            } else {
-                Toast.makeText(getContext(), "위치 정보가 없습니다.", Toast.LENGTH_SHORT).show();
-            }
-        });
+        );
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerView.setAdapter(adapter);
 
