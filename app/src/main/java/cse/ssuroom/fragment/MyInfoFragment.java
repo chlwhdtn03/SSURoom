@@ -87,7 +87,31 @@ public class MyInfoFragment extends Fragment {
         shortTermRepo = new ShortTermRepository();
         leaseTransferRepo = new LeaseTransferRepository();
 
-        myListingsAdapter = new PropertyListAdapter(getContext(), myListings, R.layout.item_favorite_list);
+        myListingsAdapter = new PropertyListAdapter(getContext(), myListings, R.layout.item_favorite_list, property -> {
+            if (property.getLocation() != null) {
+                try {
+                    Object latObj = property.getLocation().get("latitude");
+                    Object lngObj = property.getLocation().get("longitude");
+
+                    if (latObj instanceof Number && lngObj instanceof Number) {
+                        double lat = ((Number) latObj).doubleValue();
+                        double lng = ((Number) lngObj).doubleValue();
+
+                        if (getActivity() instanceof cse.ssuroom.MainActivity) {
+                            ((cse.ssuroom.MainActivity) getActivity()).navigateToMap(lat, lng);
+                        }
+                    } else {
+                        Log.e("MyInfoFragment", "Invalid location data types");
+                        Toast.makeText(getContext(), "위치 정보 형식이 올바르지 않습니다.", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Log.e("MyInfoFragment", "Error navigating to map", e);
+                    Toast.makeText(getContext(), "지도 이동 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(getContext(), "위치 정보가 없습니다.", Toast.LENGTH_SHORT).show();
+            }
+        });
         binding.recyclerViewMyListings.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.recyclerViewMyListings.setAdapter(myListingsAdapter);
 
