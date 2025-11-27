@@ -11,6 +11,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -39,6 +40,7 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
     private final List<Property> properties;
     private final int layoutId;
     private final OnMapButtonClickListener onMapButtonClickListener;
+    private final String currentUid;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
@@ -46,12 +48,15 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
         void onMapButtonClick(Property property);
     }
 
-    public PropertyListAdapter(Context context, List<Property> properties, int layoutId, OnMapButtonClickListener onMapButtonClickListener) {
+    public PropertyListAdapter(Context context, List<Property> properties, int layoutId,
+                               String currentUid, OnMapButtonClickListener onMapButtonClickListener) {
         this.context = context;
         this.properties = properties;
         this.layoutId = layoutId;
+        this.currentUid = currentUid;  // 이제 클래스 필드에 저장됨
         this.onMapButtonClickListener = onMapButtonClickListener;
     }
+
 
     @NonNull
     @Override
@@ -85,6 +90,8 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
         private Button viewOnMapButton;
         private TextView propertyTypeBadge;
 
+        private Button deleteButton;
+
         public PropertyViewHolder(@NonNull View itemView) {
             super(itemView);
 
@@ -95,19 +102,29 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
             roomLocation = itemView.findViewById(R.id.room_location);
             roomScore = itemView.findViewById(R.id.room_score);
             viewOnMapButton = itemView.findViewById(R.id.view_on_map_button);
+            deleteButton = itemView.findViewById(R.id.delete_button);
+            roomDetails = itemView.findViewById(R.id.room_details);
 
-            if (layoutId == R.layout.item_room_list) {
-                roomDetails = itemView.findViewById(R.id.room_details);
-            } else if (layoutId == R.layout.item_favorite_list) {
-                propertyTypeBadge = itemView.findViewById(R.id.property_type_badge);
-                roomDuration = itemView.findViewById(R.id.room_duration);
-                // TODO : 매물 기간 item_room_list에 없어서 추가해서 일단 여기에 빼둔 거고 추가했으면 else if에서 뺴고 공통으로 넣으면 됨. 구현한 코드도 공통으로 뺴야함. 할때 물어보셈
-            }
         }
 
         public void bind(Property property) {
             roomTitle.setText(property.getTitle());
             roomPrice.setText(getPriceText(property));
+
+            // 🔹 삭제 버튼 안전하게 처리
+            Button deleteButton = itemView.findViewById(R.id.delete_button);
+            if (deleteButton != null) { // 버튼이 있는 경우만
+                if (currentUser != null && property.getHostId() != null
+                        && property.getHostId().equals(currentUser.getUid())) {
+                    deleteButton.setVisibility(View.VISIBLE);
+                    deleteButton.setOnClickListener(v -> showDeleteDialog(property));
+                } else {
+                    deleteButton.setVisibility(View.GONE);
+                }
+            }
+
+
+
             // 매뮬 이미지 설정
             if (property.getPhotos() != null && !property.getPhotos().isEmpty()) {
                 Glide.with(context)
@@ -163,23 +180,6 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
                     roomDetails.setText(details);
                 }
 
-            } else if (layoutId == R.layout.item_favorite_list) {
-                // 매물 기간 설정
-                if (property.getMoveInDate() != null && property.getMoveOutDate() != null) {
-                    java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy.MM.dd", Locale.KOREA);
-                    String duration = dateFormat.format(property.getMoveInDate()) + " ~ " + dateFormat.format(property.getMoveOutDate());
-                    roomDuration.setText(duration);
-                } else {
-                    roomDuration.setText("기간 정보 없음");
-                }
-                // 단기, 양도 매물 타입 설정
-                if (property instanceof ShortTerm) {
-                    propertyTypeBadge.setText("단기임대");
-                    propertyTypeBadge.getBackground().setTint(Color.parseColor("#5CB85C"));
-                } else if (property instanceof LeaseTransfer) {
-                    propertyTypeBadge.setText("계약양도");
-                    propertyTypeBadge.getBackground().setTint(Color.parseColor("#4285F4"));
-                }
             }
         }
         private String getPriceText(Property property) {
@@ -252,5 +252,37 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
                         }
                     });
         }
+        private void showDeleteDialog(Property property) {
+            new AlertDialog.Builder(context)
+                    .setTitle("매물 삭제")
+                    .setMessage("정말 이 매물을 삭제하시겠습니까?")
+                    .setPositiveButton("삭제", (dialog, which) -> deleteProperty(property))
+                    .setNegativeButton("취소", null)
+                    .show();
+        }
+
+        private void deleteProperty(Property property) {
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+            // 🔥 매물 삭제
+            db.collection("properties")
+                    .document(property.getPropertyId())
+                    .delete()
+                    .addOnSuccessListener(aVoid -> {
+
+                        // 리스트에서 제거
+                        int index = properties.indexOf(property);
+                        if (index != -1) {
+                            properties.remove(index);
+                            notifyItemRemoved(index);
+                        }
+
+                        Toast.makeText(context, "매물이 삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(context, "삭제 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
+        }
+
     }
 }

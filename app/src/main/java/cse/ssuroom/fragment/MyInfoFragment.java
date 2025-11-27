@@ -53,6 +53,9 @@ public class MyInfoFragment extends Fragment {
     private List<Property> myListings = new ArrayList<>();
     private ShortTermRepository shortTermRepo;
     private LeaseTransferRepository leaseTransferRepo;
+    // 🔹 현재 UID 가져오기
+    FirebaseUser currentUser;
+    String currentUid = currentUser != null ? currentUser.getUid() : "";
 
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,34 +87,31 @@ public class MyInfoFragment extends Fragment {
         db = FirebaseFirestore.getInstance();
         storageRef = FirebaseStorage.getInstance().getReference();
 
+        currentUser = mAuth.getCurrentUser();
+
         shortTermRepo = new ShortTermRepository();
         leaseTransferRepo = new LeaseTransferRepository();
 
-        myListingsAdapter = new PropertyListAdapter(getContext(), myListings, R.layout.item_favorite_list, property -> {
-            if (property.getLocation() != null) {
-                try {
-                    Object latObj = property.getLocation().get("latitude");
-                    Object lngObj = property.getLocation().get("longitude");
-
-                    if (latObj instanceof Number && lngObj instanceof Number) {
-                        double lat = ((Number) latObj).doubleValue();
-                        double lng = ((Number) lngObj).doubleValue();
-
-                        if (getActivity() instanceof cse.ssuroom.MainActivity) {
-                            ((cse.ssuroom.MainActivity) getActivity()).navigateToMap(lat, lng);
+        myListingsAdapter = new PropertyListAdapter(
+                getContext(),
+                myListings,
+                R.layout.item_room_list,
+                currentUid, // 🔹 여기
+                property -> {
+                    if (property.getLocation() != null) {
+                        Object latObj = property.getLocation().get("latitude");
+                        Object lngObj = property.getLocation().get("longitude");
+                        if (latObj instanceof Number && lngObj instanceof Number) {
+                            double lat = ((Number) latObj).doubleValue();
+                            double lng = ((Number) lngObj).doubleValue();
+                            if (getActivity() instanceof cse.ssuroom.MainActivity) {
+                                ((cse.ssuroom.MainActivity) getActivity()).navigateToMap(lat, lng);
+                            }
                         }
-                    } else {
-                        Log.e("MyInfoFragment", "Invalid location data types");
-                        Toast.makeText(getContext(), "위치 정보 형식이 올바르지 않습니다.", Toast.LENGTH_SHORT).show();
                     }
-                } catch (Exception e) {
-                    Log.e("MyInfoFragment", "Error navigating to map", e);
-                    Toast.makeText(getContext(), "지도 이동 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
                 }
-            } else {
-                Toast.makeText(getContext(), "위치 정보가 없습니다.", Toast.LENGTH_SHORT).show();
-            }
-        });
+        );
+        binding.recyclerViewMyListings.setAdapter(myListingsAdapter);
         binding.recyclerViewMyListings.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.recyclerViewMyListings.setAdapter(myListingsAdapter);
 
@@ -173,9 +173,17 @@ public class MyInfoFragment extends Fragment {
         List<Property> combinedList = new ArrayList<>();
         final int[] tasksCompleted = {0};
         int totalTasks = 2; // 매물 타입 2개
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        String uid = currentUser != null ? currentUser.getUid() : null;
 
         // 단기 임대 매물 가져오기
         shortTermRepo.findAllByIds(propertyIds, shortTerms -> {
+            if (uid != null) {
+                for (Property p : shortTerms) {
+                    p.setHostId(uid); // hostId 세팅
+                    Log.d("MyInfoFragment", "Property title=" + p.getTitle() + ", hostId=" + p.getHostId());
+                }
+            }
             synchronized (combinedList) {
                 combinedList.addAll(shortTerms);
             }
@@ -187,6 +195,11 @@ public class MyInfoFragment extends Fragment {
 
         // 계약 양도 매물 가져오기
         leaseTransferRepo.findAllByIds(propertyIds, leaseTransfers -> {
+            if (uid != null) {
+                for (Property p : leaseTransfers) {
+                    p.setHostId(uid); // hostId 세팅
+                }
+            }
             synchronized (combinedList) {
                 combinedList.addAll(leaseTransfers);
             }
@@ -196,6 +209,7 @@ public class MyInfoFragment extends Fragment {
             }
         });
     }
+
     private void updateMyListingsAdapter(List<Property> properties) {
         if (!isAdded()) return;
 
