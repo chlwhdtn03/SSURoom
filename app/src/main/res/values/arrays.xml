@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="initial_score_values">
+        <item>0.0</item>
+        <item>100.0</item>
+    </array>
+    <array name="initial_price_values">
+        <item>50000.0</item>
+        <item>500000.0</item>
+    </array>
+    <array name="initial_duration_values">
+        <item>1.0</item>
+        <item>52.0</item>
+    </array>
+</resources>

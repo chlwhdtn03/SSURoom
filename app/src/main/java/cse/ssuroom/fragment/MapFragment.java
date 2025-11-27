@@ -40,6 +40,8 @@ import com.naver.maps.map.overlay.OverlayImage;
 import com.naver.maps.map.util.FusedLocationSource;
 import android.graphics.Color;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -65,7 +67,7 @@ import cse.ssuroom.map.ItemKey;
  * Use the {@link MapFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class MapFragment extends Fragment implements OnMapReadyCallback {
+public class MapFragment extends Fragment implements OnMapReadyCallback, FilterBottomSheet.FilterListener {
     private FusedLocationSource locationSource;
     private FragmentMapBinding binding;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1000;
@@ -84,7 +86,19 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     private NaverMap naverMap; // Store NaverMap instance
     private LatLng pendingCameraPosition; // Store pending camera position
 
-    Clusterer<ItemKey> clusterer;
+    private Clusterer<ItemKey> clusterer;
+
+    // 전체 데이터 저장 (필터용)
+    private List<LeaseTransfer> allLeaseList = new ArrayList<>();
+    private List<ShortTerm> allShortList = new ArrayList<>();
+
+    // 필터 값 - 슈방 점수
+    private float minScore = 0;
+    private float maxScore = 100;
+
+    // 필터 값 - 임대 기간 (주 단위)
+    private float minDuration = 1;
+    private float maxDuration = 52;
 
     public MapFragment() {
         // Required empty public constructor
@@ -140,7 +154,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
 
         binding.filterBtn.setOnClickListener(view -> {
-            new FilterBottomSheet().show(getChildFragmentManager(), "filter");
+            FilterBottomSheet filterSheet = FilterBottomSheet.newInstance(true, false); // 가격 필터 숨김
+            filterSheet.setFilterListener(this);
+            filterSheet.show(getChildFragmentManager(), "filter");
         });
 
         binding.addBtn.setOnClickListener(view ->{
@@ -220,6 +236,167 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         }
         return false;
     }
+
+    @Override
+    public void onFilterApplied(float minScore, float maxScore, float minPrice, float maxPrice, float minDuration, float maxDuration) {
+        // 슈방 점수 필터 적용
+        this.minScore = minScore;
+        this.maxScore = maxScore;
+
+        // 임대 기간 필터 적용
+        this.minDuration = minDuration;
+        this.maxDuration = maxDuration;
+
+        // 가격 필터는 무시 (지도에서는 가격 필터 사용 안 함)
+
+        applyFilter();
+    }
+
+    private void applyFilter() {
+        if (naverMap == null) {
+            return;
+        }
+
+        Map<ItemKey, Object> keyTagMap = new HashMap<>();
+        AtomicInteger idCounter = new AtomicInteger(0);
+
+        for(LeaseTransfer lease : allLeaseList) {
+            if (matchesLeaseFilter(lease)) {
+                try {
+                    LatLng pos = new LatLng((Double) lease.getLocation().get("latitude"), (Double) lease.getLocation().get("longitude"));
+                    ItemKey key = new ItemKey(idCounter.getAndIncrement(), pos, ItemKey.Type.Lease);
+                    keyTagMap.put(key, lease);
+                } catch (Exception e) {
+                    Log.e("LeaseRepo", "필수 데이터 없음");
+                }
+            }
+        }
+
+        for(ShortTerm term : allShortList) {
+            if (matchesShortFilter(term)) {
+                try {
+                    LatLng pos = new LatLng((Double) term.getLocation().get("latitude"), (Double) term.getLocation().get("longitude"));
+                    ItemKey key = new ItemKey(idCounter.getAndIncrement(), pos, ItemKey.Type.Short);
+                    keyTagMap.put(key, term);
+                } catch (Exception e) {
+                    Log.e("ShortRepo", "필수 데이터 없음");
+                }
+            }
+        }
+
+        if (clusterer != null) {
+            clusterer.setMap(null);
+        }
+
+        Clusterer.Builder<ItemKey> builder = new Clusterer.Builder<ItemKey>();
+        builder.clusterMarkerUpdater((ClusterMarkerInfo info, Marker marker) -> {
+            marker.setIcon(OverlayImage.fromResource(R.drawable.bg_circle_button));
+            marker.setCaptionText(String.valueOf(info.getSize()));
+            marker.setCaptionAligns(Align.Center);
+            marker.setCaptionColor(Color.BLACK);
+            marker.setCaptionHaloColor(Color.parseColor("#00000000"));
+            marker.setCaptionTextSize(20);
+        });
+
+        builder.leafMarkerUpdater((LeafMarkerInfo info, Marker marker) -> {
+            ItemKey key = (ItemKey) info.getKey();
+            Object tag = info.getTag();
+
+            marker.setCaptionAligns(Align.Top);
+            marker.setCaptionTextSize(16);
+
+            String propertyId = null;
+
+            if (key.getType() == ItemKey.Type.Lease) {
+                marker.setIcon(OverlayImage.fromResource(R.drawable.leaseicon));
+                if (tag instanceof LeaseTransfer) {
+                    LeaseTransfer lease = (LeaseTransfer) tag;
+                    marker.setCaptionText(lease.getPricing().get("deposit") + "/" + lease.getPricing().get("monthlyRent"));
+                    propertyId = lease.getPropertyId();
+                }
+            } else if (key.getType() == ItemKey.Type.Short) {
+                marker.setIcon(OverlayImage.fromResource(R.drawable.shorticon));
+                if (tag instanceof ShortTerm) {
+                    ShortTerm term = (ShortTerm) tag;
+                    marker.setCaptionText(String.valueOf(term.getPricing().get("weeklyPrice")));
+                    propertyId = term.getPropertyId();
+                }
+            }
+
+            String finalPropertyId = propertyId;
+            marker.setOnClickListener(overlay -> {
+                if (finalPropertyId != null) {
+                    RoomDetailFragment fragment = RoomDetailFragment.newInstance(finalPropertyId);
+                    fragment.show(getParentFragmentManager(), "RoomDetail");
+                    return true;
+                }
+                return false;
+            });
+        });
+
+        clusterer = builder.build();
+        clusterer.addAll(keyTagMap);
+        clusterer.setMap(naverMap);
+    }
+
+    private boolean matchesLeaseFilter(LeaseTransfer lease) {
+        // 1. 슈방 점수 체크 (scores.overall)
+        Map<String, Object> scores = lease.getScores();
+        if (scores != null && scores.containsKey("overall")) {
+            Object overallObj = scores.get("overall");
+            if (overallObj != null) {
+                float overall = ((Number) overallObj).floatValue();
+                if (overall < minScore || overall > maxScore) {
+                    return false;
+                }
+            }
+        }
+
+        // 2. 임대 기간 체크 (moveInDate ~ 현재까지의 주 단위 계산)
+        Date moveInDate = lease.getMoveInDate();
+        if (moveInDate != null) {
+            long diffInMillis = System.currentTimeMillis() - moveInDate.getTime();
+            long weeksPassed = diffInMillis / (1000 * 60 * 60 * 24 * 7);
+
+            // 이미 지난 주 수가 필터 범위를 벗어나면 제외
+            if (weeksPassed > maxDuration) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean matchesShortFilter(ShortTerm term) {
+        // 1. 슈방 점수 체크 (scores.overall)
+        Map<String, Object> scores = term.getScores();
+        if (scores != null && scores.containsKey("overall")) {
+            Object overallObj = scores.get("overall");
+            if (overallObj != null) {
+                float overall = ((Number) overallObj).floatValue();
+                if (overall < minScore || overall > maxScore) {
+                    return false;
+                }
+            }
+        }
+
+        // 2. 임대 기간 체크 (moveInDate ~ moveOutDate)
+        Date moveInDate = term.getMoveInDate();
+        Date moveOutDate = term.getMoveOutDate();
+
+        if (moveInDate != null && moveOutDate != null) {
+            long diffInMillis = moveOutDate.getTime() - moveInDate.getTime();
+            long weeksTotal = diffInMillis / (1000 * 60 * 60 * 24 * 7);
+
+            // 임대 기간이 필터 범위를 벗어나면 제외
+            if (weeksTotal < minDuration || weeksTotal > maxDuration) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     @Override
     public void onMapReady(@NonNull NaverMap naverMap) {
         this.naverMap = naverMap;
@@ -227,7 +404,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         naverMap.setLocationSource(locationSource);
         UiSettings us = naverMap.getUiSettings();
         us.setLocationButtonEnabled(true);
-        
+
         if (pendingCameraPosition != null) {
             naverMap.setCameraPosition(new CameraPosition(pendingCameraPosition, 17));
             pendingCameraPosition = null;
@@ -243,7 +420,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 if (clusterer != null) {
                     clusterer.setMap(null);
                 }
-                
+
                 Clusterer.Builder<ItemKey> builder = new Clusterer.Builder<ItemKey>();
                 builder.clusterMarkerUpdater((ClusterMarkerInfo info, Marker marker) -> {
                     marker.setIcon(OverlayImage.fromResource(R.drawable.bg_circle_button));
@@ -253,14 +430,14 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     marker.setCaptionHaloColor(Color.parseColor("#00000000"));
                     marker.setCaptionTextSize(20);
                 });
-                
+
                 builder.leafMarkerUpdater((LeafMarkerInfo info, Marker marker) -> {
                     ItemKey key = (ItemKey) info.getKey();
                     Object tag = info.getTag();
-                    
+
                     marker.setCaptionAligns(Align.Top);
                     marker.setCaptionTextSize(16);
-                    
+
                     String propertyId = null;
 
                     if (key.getType() == ItemKey.Type.Lease) {
@@ -295,15 +472,18 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 clusterer.setMap(naverMap);
             }
         };
-        
+
         leaseRepo.findAll((list) -> {
+            allLeaseList = list;
             for(LeaseTransfer lease : list) {
-                try {
-                    LatLng pos = new LatLng((Double) lease.getLocation().get("latitude"), (Double) lease.getLocation().get("longitude"));
-                    ItemKey key = new ItemKey(idCounter.getAndIncrement(), pos, ItemKey.Type.Lease);
-                    keyTagMap.put(key, lease);
-                } catch (Exception e) {
-                    Log.e("LeaseRepo", "필수 데이터 없음");
+                if (matchesLeaseFilter(lease)) {
+                    try {
+                        LatLng pos = new LatLng((Double) lease.getLocation().get("latitude"), (Double) lease.getLocation().get("longitude"));
+                        ItemKey key = new ItemKey(idCounter.getAndIncrement(), pos, ItemKey.Type.Lease);
+                        keyTagMap.put(key, lease);
+                    } catch (Exception e) {
+                        Log.e("LeaseRepo", "필수 데이터 없음");
+                    }
                 }
             }
             leaseLoaded.set(true);
@@ -311,13 +491,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         });
 
         shortRepo.findAll((list) -> {
-            for(ShortTerm lease : list) {
-                try {
-                    LatLng pos = new LatLng((Double) lease.getLocation().get("latitude"), (Double) lease.getLocation().get("longitude"));
-                    ItemKey key = new ItemKey(idCounter.getAndIncrement(), pos, ItemKey.Type.Short);
-                    keyTagMap.put(key, lease);
-                } catch (Exception e) {
-                    Log.e("ShortRepo", "필수 데이터 없음");
+            allShortList = list;
+            for(ShortTerm term : list) {
+                if (matchesShortFilter(term)) {
+                    try {
+                        LatLng pos = new LatLng((Double) term.getLocation().get("latitude"), (Double) term.getLocation().get("longitude"));
+                        ItemKey key = new ItemKey(idCounter.getAndIncrement(), pos, ItemKey.Type.Short);
+                        keyTagMap.put(key, term);
+                    } catch (Exception e) {
+                        Log.e("ShortRepo", "필수 데이터 없음");
+                    }
                 }
             }
             shortLoaded.set(true);
