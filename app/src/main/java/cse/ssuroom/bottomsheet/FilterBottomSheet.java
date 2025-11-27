@@ -23,8 +23,10 @@ import cse.ssuroom.R;
 public class FilterBottomSheet extends BottomSheetDialogFragment {
 
     private static final String ARG_IS_LEASE_TRANSFER = "is_lease_transfer";
+    private static final String ARG_SHOW_PRICE_FILTER = "show_price_filter";
 
     private boolean isLeaseTransfer;
+    private boolean showPriceFilter;
 
     // Views
     private TextView priceTitleText;
@@ -41,6 +43,8 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
     private Button applyButton;
     private ImageView closeButton;
 
+    private ViewGroup priceContainer; // 가격 레이아웃 컨테이너
+
     private FilterListener filterListener;
 
     // 필터 값
@@ -56,9 +60,14 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
     }
 
     public static FilterBottomSheet newInstance(boolean isLeaseTransfer) {
+        return newInstance(isLeaseTransfer, true); // 기본값: 가격 필터 보이기
+    }
+
+    public static FilterBottomSheet newInstance(boolean isLeaseTransfer, boolean showPriceFilter) {
         FilterBottomSheet fragment = new FilterBottomSheet();
         Bundle args = new Bundle();
         args.putBoolean(ARG_IS_LEASE_TRANSFER, isLeaseTransfer);
+        args.putBoolean(ARG_SHOW_PRICE_FILTER, showPriceFilter);
         fragment.setArguments(args);
         return fragment;
     }
@@ -72,6 +81,7 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             isLeaseTransfer = getArguments().getBoolean(ARG_IS_LEASE_TRANSFER, false);
+            showPriceFilter = getArguments().getBoolean(ARG_SHOW_PRICE_FILTER, true);
         }
     }
 
@@ -86,7 +96,14 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
         super.onViewCreated(view, savedInstanceState);
 
         initViews(view);
-        setupPriceFilter();
+
+        // 가격 필터 표시 여부 설정
+        if (!showPriceFilter) {
+            hidePriceFilter();
+        } else {
+            setupPriceFilter();
+        }
+
         setupListeners();
     }
 
@@ -104,6 +121,20 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
         durationSlider = view.findViewById(R.id.duration_slider);
         resetButton = view.findViewById(R.id.reset_button);
         applyButton = view.findViewById(R.id.apply_button);
+
+        // 가격 컨테이너 찾기 (가격 텍스트의 부모의 부모)
+        priceContainer = (ViewGroup) minPriceText.getParent().getParent();
+    }
+
+    private void hidePriceFilter() {
+        // 가격 관련 뷰들 숨기기
+        priceTitleText.setVisibility(View.GONE);
+        priceContainer.setVisibility(View.GONE);
+        priceSlider.setVisibility(View.GONE);
+
+        // 가격 기본값 설정 (필터 적용 시 영향 없도록)
+        minPrice = 0;
+        maxPrice = Float.MAX_VALUE;
     }
 
     private void setupPriceFilter() {
@@ -140,13 +171,15 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
             updateScoreText(minScore, maxScore);
         });
 
-        // 가격 슬라이더
-        priceSlider.addOnChangeListener((slider, value, fromUser) -> {
-            List<Float> values = slider.getValues();
-            minPrice = values.get(0);
-            maxPrice = values.get(1);
-            updatePriceText(minPrice, maxPrice);
-        });
+        // 가격 슬라이더 (가격 필터가 보일 때만)
+        if (showPriceFilter) {
+            priceSlider.addOnChangeListener((slider, value, fromUser) -> {
+                List<Float> values = slider.getValues();
+                minPrice = values.get(0);
+                maxPrice = values.get(1);
+                updatePriceText(minPrice, maxPrice);
+            });
+        }
 
         // 임대 기간 슬라이더
         durationSlider.addOnChangeListener((slider, value, fromUser) -> {
@@ -204,17 +237,19 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
         scoreSlider.setValues(0f, 100f);
         updateScoreText(minScore, maxScore);
 
-        // 가격 초기화
-        if (isLeaseTransfer) {
-            minPrice = 10;  // 10만원
-            maxPrice = 200; // 200만원
-            priceSlider.setValues(10f, 200f);
-        } else {
-            minPrice = 50000;
-            maxPrice = 500000;
-            priceSlider.setValues(50000f, 500000f);
+        // 가격 초기화 (가격 필터가 보일 때만)
+        if (showPriceFilter) {
+            if (isLeaseTransfer) {
+                minPrice = 10;  // 10만원
+                maxPrice = 200; // 200만원
+                priceSlider.setValues(10f, 200f);
+            } else {
+                minPrice = 50000;
+                maxPrice = 500000;
+                priceSlider.setValues(50000f, 500000f);
+            }
+            updatePriceText(minPrice, maxPrice);
         }
-        updatePriceText(minPrice, maxPrice);
 
         // 임대 기간 초기화
         minDuration = 1;
