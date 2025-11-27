@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -16,6 +17,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import cse.ssuroom.databinding.ActivityMainBinding;
 import cse.ssuroom.fragment.ChatFragment;
@@ -59,6 +65,9 @@ public class MainActivity extends AppCompatActivity {
         // 알림 권한 요청
         requestNotificationPermission();
 
+        // 백그라운드에서 FCM 토큰 갱신
+        updateFCMToken();
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
@@ -94,6 +103,25 @@ public class MainActivity extends AppCompatActivity {
             }
             return true;
         });
+    }
+
+    private void updateFCMToken() {
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) return; // 로그인 상태가 아니면 중단
+
+        String userId = currentUser.getUid();
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.w("MainActivity", "Fetching FCM registration token failed", task.getException());
+                        return;
+                    }
+                    String token = task.getResult();
+                    FirebaseFirestore.getInstance().collection("users").document(userId)
+                            .update("fcmToken", token)
+                            .addOnSuccessListener(aVoid -> Log.d("MainActivity", "FCM token updated in background."))
+                            .addOnFailureListener(e -> Log.w("MainActivity", "Error updating FCM token in background", e));
+                });
     }
 
     private void requestNotificationPermission() {

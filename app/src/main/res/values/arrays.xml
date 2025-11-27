@@ -12,4 +12,8 @@
         <item>1.0</item>
         <item>52.0</item>
     </array>
+    <array name="initial_range_slider_values">
+        <item>10</item>
+        <item>70</item>
+    </array>
 </resources>

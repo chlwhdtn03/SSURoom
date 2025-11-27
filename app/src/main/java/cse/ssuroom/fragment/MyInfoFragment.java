@@ -24,6 +24,7 @@ import com.bumptech.glide.Glide;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -31,10 +32,13 @@ import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import cse.ssuroom.LoginActivity;
 import cse.ssuroom.R;
+import cse.ssuroom.adapter.NotificationFilterAdapter;
 import cse.ssuroom.adapter.PropertyListAdapter;
+import cse.ssuroom.bottomsheet.FilterSettingBottomSheet;
 import cse.ssuroom.database.LeaseTransferRepository;
 import cse.ssuroom.database.Property;
 import cse.ssuroom.database.ShortTermRepository;
@@ -56,6 +60,10 @@ public class MyInfoFragment extends Fragment {
     // 🔹 현재 UID 가져오기
     FirebaseUser currentUser;
     String currentUid = currentUser != null ? currentUser.getUid() : "";
+
+    // Notification Filter List
+    private NotificationFilterAdapter filterAdapter;
+    private List<Map<String, Object>> filterList = new ArrayList<>();
 
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -112,8 +120,38 @@ public class MyInfoFragment extends Fragment {
                 }
         );
         binding.recyclerViewMyListings.setAdapter(myListingsAdapter);
+        // Setup My Listings RecyclerView
+        myListingsAdapter = new PropertyListAdapter(getContext(), myListings, R.layout.item_room_list, currentUid, (property) -> {
+            if (property.getLocation() != null) {
+                try {
+                    Object latObj = property.getLocation().get("latitude");
+                    Object lngObj = property.getLocation().get("longitude");
+
+                    if (latObj instanceof Number && lngObj instanceof Number) {
+                        double lat = ((Number) latObj).doubleValue();
+                        double lng = ((Number) lngObj).doubleValue();
+
+                        if (getActivity() instanceof cse.ssuroom.MainActivity) {
+                            ((cse.ssuroom.MainActivity) getActivity()).navigateToMap(lat, lng);
+                        }
+                    } else {
+                        Log.e("MyInfoFragment", "Invalid location data types");
+                        Toast.makeText(getContext(), "위치 정보 형식이 올바르지 않습니다.", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Log.e("MyInfoFragment", "Error navigating to map", e);
+                    Toast.makeText(getContext(), "지도 이동 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(getContext(), "위치 정보가 없습니다.", Toast.LENGTH_SHORT).show();
+            }
+        });
         binding.recyclerViewMyListings.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.recyclerViewMyListings.setAdapter(myListingsAdapter);
+
+        // Setup Notification Filter RecyclerView
+        setupFilterRecyclerView();
+        loadNotificationFilters();
 
         updateUserInfo(); // 앞으로 필요한 유저 데이터를 가져올 함수
 
@@ -121,7 +159,59 @@ public class MyInfoFragment extends Fragment {
 
         binding.btnLogout.setOnClickListener(v -> logout()); // 로그아웃 실행
 
+        binding.btnAddNotification.setOnClickListener(v -> {
+            FilterSettingBottomSheet bottomSheet = FilterSettingBottomSheet.newInstance();
+            bottomSheet.setOnFilterSavedListener(this::loadNotificationFilters);
+            bottomSheet.show(getParentFragmentManager(), FilterSettingBottomSheet.TAG);
+        });
     }
+
+    private void setupFilterRecyclerView() {
+        filterAdapter = new NotificationFilterAdapter(filterList, position -> deleteFilter(position));
+        binding.recyclerViewNotificationFilters.setLayoutManager(new LinearLayoutManager(getContext()));
+        binding.recyclerViewNotificationFilters.setAdapter(filterAdapter);
+    }
+
+    private void loadNotificationFilters() {
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) return;
+
+        db.collection("users").document(currentUser.getUid()).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (!isAdded()) return;
+                    if (documentSnapshot.exists()) {
+                        List<Map<String, Object>> filters = (List<Map<String, Object>>) documentSnapshot.get("notificationFilters");
+                        if (filters != null) {
+                            filterList.clear();
+                            filterList.addAll(filters);
+                            filterAdapter.notifyDataSetChanged();
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.w("MyInfoFragment", "Error loading filters", e);
+                });
+    }
+
+    private void deleteFilter(int position) {
+        if (position < 0 || position >= filterList.size()) return;
+        Map<String, Object> filterToRemove = filterList.get(position);
+
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) return;
+
+        db.collection("users").document(currentUser.getUid())
+                .update("notificationFilters", FieldValue.arrayRemove(filterToRemove))
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(getContext(), "알림 조건이 삭제되었습니다.", Toast.LENGTH_SHORT).show();
+                    filterList.remove(position);
+                    filterAdapter.notifyItemRemoved(position);
+                })
+                .addOnFailureListener(e -> {
+                     Toast.makeText(getContext(), "삭제 실패: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
     // 네비게이션 selected에서 사용하기 위해 public으로 전환함
     public void updateUserInfo() {
         FirebaseUser currentUser = mAuth.getCurrentUser();

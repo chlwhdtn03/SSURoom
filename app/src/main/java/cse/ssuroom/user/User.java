@@ -2,6 +2,7 @@ package cse.ssuroom.user;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 // FireStore에 저장할 User Class (프로필 이미지는 생성자로 바로 불가능함)
 public class User {
@@ -11,11 +12,13 @@ public class User {
     private String profileImageUrl; // 프로필 이미지 URL을 저장할 필드
     private List<String> favorites;
     private List<String> uploadedProperties;
+    private List<Map<String, Object>> notificationFilters; // 알림 필터 설정을 저장할 리스트
 
 
     public User() {
         this.favorites = new ArrayList<>();
         this.uploadedProperties = new ArrayList<>();
+        this.notificationFilters = new ArrayList<>(); // 초기화
     }
 
     // 데이터를 저장할 때 사용할 생성자
@@ -26,6 +29,7 @@ public class User {
         this.profileImageUrl = ""; // 처음에는 빈 값으로 초기화
         this.favorites = new ArrayList<>();
         this.uploadedProperties = new ArrayList<>();
+        this.notificationFilters = new ArrayList<>(); // 초기화
     }
 
     // Getter와 Setter
@@ -75,5 +79,13 @@ public class User {
 
     public void setUploadedProperties(List<String> uploadedProperties) {
         this.uploadedProperties = uploadedProperties;
+    }
+
+    public List<Map<String, Object>> getNotificationFilters() {
+        return notificationFilters;
+    }
+
+    public void setNotificationFilters(List<Map<String, Object>> notificationFilters) {
+        this.notificationFilters = notificationFilters;
     }
 }

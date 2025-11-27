@@ -20,32 +20,44 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
-        // --- 여기부터 수정된 부분 ---
         Log.d(TAG, "FCM 메시지 수신!");
         Log.d(TAG, "보낸 사람: " + remoteMessage.getFrom());
 
-        // 메시지에 데이터 페이로드가 포함되어 있는지 확인합니다.
         if (remoteMessage.getData().size() > 0) {
             Log.d(TAG, "메시지 데이터: " + remoteMessage.getData());
 
-            // 데이터 페이로드에서 채팅 정보 추출
             Map<String, String> data = remoteMessage.getData();
-            String chatRoomId = data.get("chatRoomId");
-            String senderName = data.get("senderName");
-            String message = data.get("message");
+            String type = data.get("type");
 
-            if (chatRoomId != null && senderName != null && message != null) {
-                Log.d(TAG, "알림 생성 시도: " + senderName + " - " + message);
-                // 알림을 표시하는 헬퍼 메서드 호출
-                NotificationHelper.showNewMessageNotification(this, chatRoomId, senderName, message);
-                Log.d(TAG, "알림 생성이 NotificationHelper에 요청되었습니다.");
+            if ("new_property".equals(type)) {
+                String propertyId = data.get("propertyId");
+                String title = data.get("title");
+                String body = data.get("body");
+
+                if (propertyId != null && title != null && body != null) {
+                    Log.d(TAG, "매물 알림 생성 시도: " + title + " - " + body);
+                    NotificationHelper.showNewPropertyNotification(this, propertyId, title, body);
+                    Log.d(TAG, "매물 알림 생성이 NotificationHelper에 요청되었습니다.");
+                } else {
+                    Log.w(TAG, "매물 알림에 필요한 데이터가 부족합니다.");
+                }
+
+            } else if ("chat".equals(type)) {
+                String chatRoomId = data.get("chatRoomId");
+                String senderName = data.get("senderName");
+                String message = data.get("message");
+
+                if (chatRoomId != null && senderName != null && message != null) {
+                    Log.d(TAG, "채팅 알림 생성 시도: " + senderName + " - " + message);
+                    NotificationHelper.showNewMessageNotification(this, chatRoomId, senderName, message);
+                    Log.d(TAG, "채팅 알림 생성이 NotificationHelper에 요청되었습니다.");
+                }
             } else {
-                Log.e(TAG, "수신된 데이터에 필수 정보가 누락되었습니다.");
+                Log.d(TAG, "알 수 없는 유형의 메시지입니다.");
             }
         } else {
             Log.d(TAG, "데이터 페이로드가 없는 메시지입니다.");
         }
-        // --- 여기까지 ---
     }
 
     @Override
