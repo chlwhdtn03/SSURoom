@@ -1,34 +1,348 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="12dp"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
-    tools:context=".bottomsheet.FilterBottomSheet">
+    android:background="@drawable/bg_bottom_sheet"
+    android:padding="24dp">
 
-    <TextView
+    <!-- 헤더 -->
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/filter"
-        android:textSize="24sp"
-        android:textStyle="bold"/>
+        android:layout_marginBottom="24dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/filterDescription"
-        android:textSize="16sp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="조건 필터"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_centerVertical="true"/>
 
+        <ImageView
+            android:id="@+id/iv_close"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:src="@drawable/ic_close"
+            app:tint="@color/text_primary"
+            android:contentDescription="닫기"/>
+    </RelativeLayout>
+
+    <!-- 슈방 점수 -->
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/priceLevel"
+        android:text="슈방 점수"
         android:textSize="16sp"
-        android:textStyle="bold"/>
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="12dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@color/ssu_green_background"
+            android:padding="12dp"
+            android:layout_marginEnd="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="최소"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/min_score_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0점"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/ssu_green_primary"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="~"
+            android:textSize="18sp"
+            android:textColor="@color/text_primary"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="8dp"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@color/ssu_green_background"
+            android:padding="12dp"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="최대"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/max_score_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="100점"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/ssu_green_primary"/>
+        </LinearLayout>
+    </LinearLayout>
 
     <com.google.android.material.slider.RangeSlider
+        android:id="@+id/score_slider"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:valueFrom="0"
+        android:valueTo="100"
+        android:stepSize="5"
+        app:values="@array/initial_score_values"
+        app:thumbColor="@color/ssu_green_primary"
+        app:trackColorActive="@color/ssu_green_primary"
+        app:trackColorInactive="@color/grey_light"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- 가격 (동적으로 변경됨: 주당 가격 or 월세) -->
+    <TextView
+        android:id="@+id/price_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="주당 가격"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="12dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@color/ssu_green_background"
+            android:padding="12dp"
+            android:layout_marginEnd="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="최소"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/min_price_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="50,000원"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/ssu_green_primary"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="~"
+            android:textSize="18sp"
+            android:textColor="@android:color/white"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="8dp"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@color/ssu_green_background"
+            android:padding="12dp"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="최대"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/max_price_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="500,000원"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/ssu_green_primary"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <com.google.android.material.slider.RangeSlider
+        android:id="@+id/price_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="50000"
+        android:valueTo="500000"
+        android:stepSize="10000"
+        app:values="@array/initial_price_values"
+        app:thumbColor="@color/ssu_green_primary"
+        app:trackColorActive="@color/ssu_green_primary"
+        app:trackColorInactive="@color/grey_light"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- 임대 기간 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="임대 기간"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="12dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@color/ssu_green_background"
+            android:padding="12dp"
+            android:layout_marginEnd="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="최소"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/min_duration_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1주"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/ssu_green_primary"/>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="~"
+            android:textSize="18sp"
+            android:textColor="@android:color/white"
+            android:layout_gravity="center"
+            android:layout_marginHorizontal="8dp"/>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@color/ssu_green_background"
+            android:padding="12dp"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="최대"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/max_duration_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1년 이상"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/ssu_green_primary"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <com.google.android.material.slider.RangeSlider
+        android:id="@+id/duration_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="1"
+        android:valueTo="52"
+        android:stepSize="1"
+        app:values="@array/initial_duration_values"
+        app:thumbColor="@color/ssu_green_primary"
+        app:trackColorActive="@color/ssu_green_primary"
+        app:trackColorInactive="@color/grey_light"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- 버튼 영역 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="2">
+
+        <Button
+            android:id="@+id/reset_button"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="0.7"
+            android:layout_marginEnd="8dp"
+            android:text="초기화"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:backgroundTint="@color/ssu_green_primary"/>
+
+        <Button
+            android:id="@+id/apply_button"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1.3"
+            android:layout_marginStart="8dp"
+            android:text="적용하기"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/black"
+            android:backgroundTint="@color/ssu_green_primary"/>
+
+    </LinearLayout>
 
 </LinearLayout>
