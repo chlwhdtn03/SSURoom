@@ -38,13 +38,19 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
     private final Context context;
     private final List<Property> properties;
     private final int layoutId;
+    private final OnMapButtonClickListener onMapButtonClickListener;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
-    public PropertyListAdapter(Context context, List<Property> properties, int layoutId) {
+    public interface OnMapButtonClickListener {
+        void onMapButtonClick(Property property);
+    }
+
+    public PropertyListAdapter(Context context, List<Property> properties, int layoutId, OnMapButtonClickListener onMapButtonClickListener) {
         this.context = context;
         this.properties = properties;
         this.layoutId = layoutId;
+        this.onMapButtonClickListener = onMapButtonClickListener;
     }
 
     @NonNull
@@ -132,9 +138,11 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
             } else {
                 roomScore.setText("0");
             }
-            // 지도보기 버튼 TODO : 구현 필요
+            // 지도보기 버튼
             viewOnMapButton.setOnClickListener(v -> {
-                Toast.makeText(context, "지도보기 기능 준비중", Toast.LENGTH_SHORT).show();
+                if (onMapButtonClickListener != null) {
+                    onMapButtonClickListener.onMapButtonClick(property);
+                }
             });
             // 즐겨찾기 설정
             updateFavoriteIcon(property.getPropertyId());

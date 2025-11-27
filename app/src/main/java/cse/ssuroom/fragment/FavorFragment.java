@@ -72,7 +72,31 @@ public class FavorFragment extends Fragment {
     }
 
     private void setupRecyclerView() {
-        adapter = new PropertyListAdapter(getContext(), favoriteProperties, R.layout.item_favorite_list);
+        adapter = new PropertyListAdapter(getContext(), favoriteProperties, R.layout.item_favorite_list, property -> {
+            if (property.getLocation() != null) {
+                try {
+                    Object latObj = property.getLocation().get("latitude");
+                    Object lngObj = property.getLocation().get("longitude");
+
+                    if (latObj instanceof Number && lngObj instanceof Number) {
+                        double lat = ((Number) latObj).doubleValue();
+                        double lng = ((Number) lngObj).doubleValue();
+
+                        if (getActivity() instanceof cse.ssuroom.MainActivity) {
+                            ((cse.ssuroom.MainActivity) getActivity()).navigateToMap(lat, lng);
+                        }
+                    } else {
+                        Log.e("FavorFragment", "Invalid location data types");
+                        Toast.makeText(getContext(), "위치 정보 형식이 올바르지 않습니다.", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Log.e("FavorFragment", "Error navigating to map", e);
+                    Toast.makeText(getContext(), "지도 이동 중 오류가 발생했습니다.", Toast.LENGTH_SHORT).show();
+                }
+            } else {
+                Toast.makeText(getContext(), "위치 정보가 없습니다.", Toast.LENGTH_SHORT).show();
+            }
+        });
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(adapter);
     }

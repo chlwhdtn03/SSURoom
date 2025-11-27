@@ -87,4 +87,9 @@ public class MainActivity extends AppCompatActivity {
         binding.bottomNavigationView.setVisibility(visibility);
     }
 
+    public void navigateToMap(double lat, double lng) {
+        binding.bottomNavigationView.setSelectedItemId(R.id.action_map);
+        mapFragment.moveCamera(lat, lng);
+    }
+
 }

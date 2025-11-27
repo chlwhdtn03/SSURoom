@@ -81,6 +81,8 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
 
     private LeaseTransferRepository leaseRepo;
     private ShortTermRepository shortRepo;
+    private NaverMap naverMap; // Store NaverMap instance
+    private LatLng pendingCameraPosition; // Store pending camera position
 
     Clusterer<ItemKey> clusterer;
 
@@ -220,10 +222,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
     }
     @Override
     public void onMapReady(@NonNull NaverMap naverMap) {
+        this.naverMap = naverMap;
         naverMap.setCameraPosition(new CameraPosition(new LatLng(37.4959, 126.9577), 15));
         naverMap.setLocationSource(locationSource);
         UiSettings us = naverMap.getUiSettings();
         us.setLocationButtonEnabled(true);
+        
+        if (pendingCameraPosition != null) {
+            naverMap.setCameraPosition(new CameraPosition(pendingCameraPosition, 17));
+            pendingCameraPosition = null;
+        }
 
         Map<ItemKey, Object> keyTagMap = new HashMap<>();
         AtomicBoolean leaseLoaded = new AtomicBoolean(false);
@@ -253,19 +261,33 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                     marker.setCaptionAligns(Align.Top);
                     marker.setCaptionTextSize(16);
                     
+                    String propertyId = null;
+
                     if (key.getType() == ItemKey.Type.Lease) {
                         marker.setIcon(OverlayImage.fromResource(R.drawable.leaseicon));
                         if (tag instanceof LeaseTransfer) {
                             LeaseTransfer lease = (LeaseTransfer) tag;
                             marker.setCaptionText(lease.getPricing().get("deposit") + "/" + lease.getPricing().get("monthlyRent"));
+                            propertyId = lease.getPropertyId();
                         }
                     } else if (key.getType() == ItemKey.Type.Short) {
                         marker.setIcon(OverlayImage.fromResource(R.drawable.shorticon));
                         if (tag instanceof ShortTerm) {
                             ShortTerm term = (ShortTerm) tag;
                             marker.setCaptionText(String.valueOf(term.getPricing().get("weeklyPrice")));
+                            propertyId = term.getPropertyId();
                         }
                     }
+
+                    String finalPropertyId = propertyId;
+                    marker.setOnClickListener(overlay -> {
+                        if (finalPropertyId != null) {
+                            RoomDetailFragment fragment = RoomDetailFragment.newInstance(finalPropertyId);
+                            fragment.show(getParentFragmentManager(), "RoomDetail");
+                            return true;
+                        }
+                        return false;
+                    });
                 });
 
                 clusterer = builder.build();
@@ -273,7 +295,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 clusterer.setMap(naverMap);
             }
         };
-
+        
         leaseRepo.findAll((list) -> {
             for(LeaseTransfer lease : list) {
                 try {
@@ -301,6 +323,15 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             shortLoaded.set(true);
             checkCompletion.run();
         });
+    }
+
+    public void moveCamera(double lat, double lng) {
+        LatLng position = new LatLng(lat, lng);
+        if (naverMap != null) {
+            naverMap.setCameraPosition(new CameraPosition(position, 17));
+        } else {
+            pendingCameraPosition = position;
+        }
     }
 
 }
