@@ -53,7 +53,7 @@ exports.sendChatNotification = onDocumentCreated("chat_rooms/{chatRoomId}/messag
 
   // 4. 알림에 표시될 보낸 사람의 이름을 가져옵니다.
   const senderSnap = await getFirestore().collection("users").doc(senderId).get();
-  const senderName = senderSnap.exists() ? senderSnap.data().name : "새 메시지";
+  const senderName = senderSnap.exists ? senderSnap.data().name : "새 메시지";
 
   // 5. 알림 페이로드를 구성합니다.
   // 이 데이터는 앱의 MyFirebaseMessagingService#onMessageReceived 에서 수신됩니다.
