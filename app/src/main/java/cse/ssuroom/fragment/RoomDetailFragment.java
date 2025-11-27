@@ -178,7 +178,7 @@ public class RoomDetailFragment extends DialogFragment {   // ‚≠ê BottomSheet ‚Ü
     }
 
     private void displayPropertyData(com.google.firebase.firestore.DocumentSnapshot documentSnapshot) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd", Locale.getDefault());
+        SimpleDateFormat sdf = new SimpleDateFormat("yy.MM.dd", Locale.getDefault());
         String title = documentSnapshot.getString("title");
         Object moveInObj = documentSnapshot.get("moveInDate");
         Object moveOutObj = documentSnapshot.get("moveOutDate");
@@ -214,6 +214,7 @@ public class RoomDetailFragment extends DialogFragment {   // ‚≠ê BottomSheet ‚Ü
             if (pricingObj instanceof java.util.Map) {
                 java.util.Map<String, Object> pricing = (java.util.Map<String, Object>) pricingObj;
                 String type = (String) pricing.get("type");
+                rentalType = type;
 
                 if ("short_term".equals(type)) {
                     Object weeklyPrice = pricing.get("weeklyPrice");

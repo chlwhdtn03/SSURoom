@@ -191,7 +191,6 @@ public class PropertyRepository<T extends Property> {
                     listener.onComplete(false);
                 });
     }
-
     // --- 공용 콜백 인터페이스 ---
     public interface OnPropertyIdGenerated {
         void onGenerated(String propertyId);
