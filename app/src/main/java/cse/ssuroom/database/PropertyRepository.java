@@ -12,10 +12,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-/**
- * 모든 매물 Repository의 공통 기능을 담는 부모 클래스입니다.
- * 제네릭 타입 T는 Property를 상속받는 클래스(LeaseTransfer, ShortTerm 등)를 의미합니다.
- */
 public class PropertyRepository<T extends Property> {
 
     protected FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -24,9 +20,8 @@ public class PropertyRepository<T extends Property> {
     private final String TAG;
 
     /**
-     * 자식 Repository가 생성될 때, Firestore 컬렉션 이름과 클래스 타입을 받아옵니다.
-     * @param collectionName Firestore에서 사용할 컬렉션의 이름 (e.g., "lease_transfers")
-     * @param propertyClass 데이터를 변환할 클래스 타입 (e.g., LeaseTransfer.class)
+     * @param collectionName Firestore에서 사용할 컬렉션의 이름
+     * @param propertyClass 데이터를 변환할 클래스 타입
      * @param tag Logcat에서 사용할 태그
      */
     public PropertyRepository(String collectionName, Class<T> propertyClass, String tag) {
@@ -35,7 +30,7 @@ public class PropertyRepository<T extends Property> {
         this.TAG = tag;
     }
 
-    // C: 매물 등록 (ID 자동 생성)
+    //  매물 등록 (ID 자동 생성)
     public void save(T property, OnPropertyIdGenerated listener) {
         db.collection(collectionName)
                 .add(property)
@@ -45,7 +40,7 @@ public class PropertyRepository<T extends Property> {
                     listener.onGenerated(null);
                 });
     }
-    // R: 특정 매물 조회
+    //  특정 매물 조회
     public void findById(String propertyId, OnPropertyLoaded<T> listener) {
         db.collection(collectionName)
                 .document(propertyId)
@@ -53,7 +48,7 @@ public class PropertyRepository<T extends Property> {
                 .addOnSuccessListener(docSnap -> {
                     if (docSnap.exists()) {
                         T property = docSnap.toObject(propertyClass);
-                        // ⭐ 문서 ID 설정
+                        //  문서 ID 설정
                         if (property != null) {
                             property.setPropertyId(docSnap.getId());
                         }
@@ -68,7 +63,7 @@ public class PropertyRepository<T extends Property> {
                 });
     }
 
-    // R: 전체 매물 조회
+    // 전체 매물 조회
     public void findAll(OnPropertiesLoaded<T> listener) {
         db.collection(collectionName)
                 .get()
@@ -77,7 +72,7 @@ public class PropertyRepository<T extends Property> {
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                         T property = doc.toObject(propertyClass);
 
-                        // ⭐ 문서 ID 설정
+                        // 문서 ID 설정
                         if (property != null) {
                             property.setPropertyId(doc.getId());
                             properties.add(property);
@@ -91,7 +86,7 @@ public class PropertyRepository<T extends Property> {
                 });
     }
 
-    // R: Host ID로 매물 조회
+    //  Host ID로 매물 조회
     public void findByHostId(String hostId, OnPropertiesLoaded<T> listener) {
         db.collection(collectionName)
                 .whereEqualTo("hostId", hostId)
@@ -101,7 +96,7 @@ public class PropertyRepository<T extends Property> {
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
                         T property = doc.toObject(propertyClass);
 
-                        // ⭐ 문서 ID 설정
+                        //  문서 ID 설정
                         if (property != null) {
                             property.setPropertyId(doc.getId());
                             properties.add(property);
@@ -115,15 +110,14 @@ public class PropertyRepository<T extends Property> {
                 });
     }
 
-    // R: ID 목록으로 여러 매물 조회
+
     public void findAllByIds(List<String> propertyIds, OnPropertiesLoaded<T> listener) {
         if (propertyIds == null || propertyIds.isEmpty()) {
             listener.onLoaded(new ArrayList<>());
             return;
         }
 
-        // Firestore 'whereIn' 쿼리는 한 번에 최대 30개의 ID를 조회할 수 있습니다.
-        // ID 목록을 30개씩 나누어 여러 쿼리를 실행합니다.
+
         List<List<String>> chunks = new ArrayList<>();
         for (int i = 0; i < propertyIds.size(); i = i + 30) {
             int end = Math.min(propertyIds.size(), i + 30);
@@ -131,7 +125,7 @@ public class PropertyRepository<T extends Property> {
         }
 
         List<T> allProperties = new ArrayList<>();
-        // 여러 쿼리가 모두 완료되었는지 추적하기 위한 카운터
+
         final int[] tasksCompleted = {0};
 
         if (chunks.isEmpty()) {
@@ -168,7 +162,7 @@ public class PropertyRepository<T extends Property> {
         }
     }
 
-    // U: 매물 정보 업데이트
+    // 매물 정보 업데이트
     public void update(String propertyId, T property, OnOperationComplete listener) {
         db.collection(collectionName)
                 .document(propertyId)
@@ -180,7 +174,7 @@ public class PropertyRepository<T extends Property> {
                 });
     }
 
-    // D: 매물 삭제
+    // 매물 삭제
     public void delete(String propertyId, OnOperationComplete listener) {
         db.collection(collectionName)
                 .document(propertyId)

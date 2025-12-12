@@ -139,7 +139,7 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
 
     private void setupPriceFilter() {
         if (isLeaseTransfer) {
-            // 계약양도: 월세 (만원 단위로 표시, 실제 저장은 만원 단위 숫자)
+            // 계약양도
             priceTitleText.setText("월세");
             minPrice = 10;  // 10만원
             maxPrice = 200; // 200만원
@@ -148,7 +148,7 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
             priceSlider.setStepSize(5);
             priceSlider.setValues(10f, 200f);
         } else {
-            // 단기임대: 주당 가격 (원 단위)
+            // 단기임대
             priceTitleText.setText("주당 가격");
             minPrice = 50000;
             maxPrice = 500000;
@@ -171,7 +171,7 @@ public class FilterBottomSheet extends BottomSheetDialogFragment {
             updateScoreText(minScore, maxScore);
         });
 
-        // 가격 슬라이더 (가격 필터가 보일 때만)
+        // 가격 슬라이더
         if (showPriceFilter) {
             priceSlider.addOnChangeListener((slider, value, fromUser) -> {
                 List<Float> values = slider.getValues();

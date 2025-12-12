@@ -92,7 +92,7 @@ public class RoomDetailFragment extends DialogFragment {   // ⭐ BottomSheet �
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
-        // ⭐ 팝업 배경 dim 적용
+
         setStyle(DialogFragment.STYLE_NORMAL, R.style.AppDialogTheme);
 
         View view = inflater.inflate(R.layout.fragment_property_detail, container, false);
@@ -104,22 +104,22 @@ public class RoomDetailFragment extends DialogFragment {   // ⭐ BottomSheet �
         return view;
     }
 
-    // ⭐ 팝업 사이즈/배경 등 설정
+    //
     @Override
     public void onStart() {
         super.onStart();
         if (getDialog() != null && getDialog().getWindow() != null) {
 
-            // 화면 90% 가로 크기
+
             getDialog().getWindow().setLayout(
                     (int) (getResources().getDisplayMetrics().widthPixels * 0.9),
                     ViewGroup.LayoutParams.WRAP_CONTENT
             );
 
-            // 배경 둥글게 적용
+
             getDialog().getWindow().setBackgroundDrawableResource(R.drawable.bg_round_dialog);
 
-            // 배경 어둡게 (dim)
+
             getDialog().getWindow().addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
             getDialog().getWindow().setDimAmount(0.4f);
         }
@@ -404,10 +404,10 @@ public class RoomDetailFragment extends DialogFragment {   // ⭐ BottomSheet �
     }
 
     private void navigateToChatRoom(String chatRoomId) {
-        // Dismiss this fragment first
+
         dismiss();
 
-        // Navigate to ChatRoomFragment
+
         ChatRoomFragment chatRoomFragment = ChatRoomFragment.newInstance(chatRoomId);
         getParentFragmentManager().beginTransaction()
                 .replace(R.id.screen, chatRoomFragment)
@@ -429,7 +429,7 @@ public class RoomDetailFragment extends DialogFragment {   // ⭐ BottomSheet �
             }
             User user = documentSnapshot.toObject(User.class);
             if (user == null || user.getFavorites() == null) {
-                // Initialize favorites list if null, or handle as error
+
                 if (user != null) {
                     user.setFavorites(new ArrayList<>());
                 } else {
