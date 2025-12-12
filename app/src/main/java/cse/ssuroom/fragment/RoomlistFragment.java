@@ -77,13 +77,13 @@ public class RoomlistFragment extends Fragment {
         filterButton = view.findViewById(R.id.filter_button);
 
 
-        // Repository 초기화
+
         shortTermRepo = new ShortTermRepository();
         leaseTransferRepo = new LeaseTransferRepository();
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         String currentUid = currentUser != null ? currentUser.getUid() : null;
 
-        // RecyclerView 설정
+
         adapter = new PropertyListAdapter(
                 requireContext(),
                 propertyList,
@@ -129,7 +129,6 @@ public class RoomlistFragment extends Fragment {
         // 필터 버튼 클릭
         filterButton.setOnClickListener(v -> showFilterDialog());
 
-        // Initial state
         updateView(rentTypeSwitch.isChecked());
         loadProperties(rentTypeSwitch.isChecked());
 

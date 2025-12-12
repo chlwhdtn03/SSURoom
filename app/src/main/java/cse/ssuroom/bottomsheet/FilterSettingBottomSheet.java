@@ -34,8 +34,6 @@ public class FilterSettingBottomSheet extends BottomSheetDialogFragment {
     private FirebaseAuth mAuth;
     public static final String TAG = "FilterSettingBottomSheet";
 
-    // New UI elements via binding
-    // Filter values
     private float minScore = 0;
     private float maxScore = 100;
     private float minPrice;
@@ -153,11 +151,11 @@ public class FilterSettingBottomSheet extends BottomSheetDialogFragment {
         NumberFormat formatter = NumberFormat.getInstance(Locale.KOREA);
 
         if (isLeaseTransfer) {
-            // 계약양도: 만원 단위로 표시
+            // 계약양도
             binding.minPriceTextSetting.setText(formatter.format((int) min) + "만원");
             binding.maxPriceTextSetting.setText(formatter.format((int) max) + "만원");
         } else {
-            // 단기임대: 원 단위로 표시
+            // 단기임대
             binding.minPriceTextSetting.setText(formatter.format((int) min) + "원");
             binding.maxPriceTextSetting.setText(formatter.format((int) max) + "원");
         }
@@ -193,7 +191,6 @@ public class FilterSettingBottomSheet extends BottomSheetDialogFragment {
             return;
         }
 
-        // Get final values from sliders
         List<Float> scoreRange = binding.sliderScore.getValues();
         minScore = scoreRange.get(0);
         maxScore = scoreRange.get(1);

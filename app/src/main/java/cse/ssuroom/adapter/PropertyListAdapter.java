@@ -263,8 +263,7 @@ public class PropertyListAdapter extends RecyclerView.Adapter<PropertyListAdapte
 
         private void deleteProperty(Property property) {
             FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-            // 🔥 매물 삭제
+            //매물 삭제
             db.collection("properties")
                     .document(property.getPropertyId())
                     .delete()
