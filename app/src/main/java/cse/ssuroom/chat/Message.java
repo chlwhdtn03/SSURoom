@@ -15,8 +15,6 @@ public class Message {
         this.senderId = senderId;
         this.text = text;
     }
-
-    // Getter와 Setter
     public String getSenderId() {
         return senderId;
     }

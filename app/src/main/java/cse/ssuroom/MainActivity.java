@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -143,6 +144,10 @@ public class MainActivity extends AppCompatActivity {
     public void navigateToMap(double lat, double lng) {
         binding.bottomNavigationView.setSelectedItemId(R.id.action_map);
         mapFragment.moveCamera(lat, lng);
+    }
+    
+    public void setBottomNavigationVisibility(int visibility) {
+        binding.bottomNavigationView.setVisibility(visibility);
     }
 
 }

@@ -176,6 +176,6 @@ public class FavorFragment extends Fragment {
             emptyMessageTextView.setVisibility(View.GONE);
             recyclerView.setVisibility(View.VISIBLE);
         }
-        swipeRefreshLayout.setRefreshing(false); // Stop refreshing indicator
+        swipeRefreshLayout.setRefreshing(false);
     }
 }
