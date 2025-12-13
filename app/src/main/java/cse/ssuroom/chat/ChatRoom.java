@@ -16,7 +16,6 @@ public class ChatRoom {
 
     public ChatRoom() {}
 
-    // Getter와 Setter
     public String getPropertyId() {
         return propertyId;
     }

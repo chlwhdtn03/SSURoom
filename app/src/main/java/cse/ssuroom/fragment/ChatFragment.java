@@ -107,20 +107,16 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnChatItemClic
 
                 View itemView = viewHolder.itemView;
 
-                // 배경 그리기
-                if (dX < 0) { // 왼쪽으로 스와이프
+                if (dX < 0) {
                     background.setBounds(itemView.getRight() + ((int) dX), itemView.getTop(),
                             itemView.getRight(), itemView.getBottom());
-                } else { // 스와이프하지 않은 상태
+                } else {
                     background.setBounds(0, 0, 0, 0);
                 }
                 background.draw(c);
 
-                // 텍스트 그리기 (왼쪽으로 스와이프할 때만)
                 if (dX < 0) {
-                    // 텍스트 위치 계산 (세로 중앙 정렬)
                     float textY = itemView.getTop() + (itemView.getHeight() / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f);
-                    // 텍스트 위치 계산 (가로 중앙 정렬)
                     float textX = itemView.getRight() + dX / 2;
                     c.drawText(deleteText, textX, textY, textPaint);
                 }
@@ -152,7 +148,7 @@ public class ChatFragment extends Fragment implements ChatAdapter.OnChatItemClic
                 .whereArrayContains("userIds", currentUser.getUid())
                 .orderBy("lastTimestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((snapshots, e) -> {
-                    swipeRefreshLayout.setRefreshing(false); // Stop refreshing animation
+                    swipeRefreshLayout.setRefreshing(false);
                     if (e != null) {
                         Log.w(TAG, "Listen failed.", e);
                         return;
