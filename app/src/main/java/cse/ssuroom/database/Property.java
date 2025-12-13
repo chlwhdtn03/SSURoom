@@ -6,12 +6,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
-/**
- * 모든 매물의 공통 정보를 담는 부모 클래스
- */
 public class Property {
 
-    // ⭐ 문서 ID 필드 추가
+
     @Exclude
     private String propertyId;
 
@@ -66,9 +63,8 @@ public class Property {
         this.createdAt = new Date(); // 객체가 생성되는 시점의 시간으로 자동 설정
     }
 
-    // --- Getters and Setters ---
+    //게터 세터
 
-    // ⭐ ID getter/setter 추가
     @Exclude
     public String getPropertyId() {
         return propertyId;

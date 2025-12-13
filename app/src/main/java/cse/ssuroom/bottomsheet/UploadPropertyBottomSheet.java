@@ -329,7 +329,7 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
             binding.layoutWeeklyPrice.setVisibility(View.VISIBLE);
             binding.layoutDepositMonthly.setVisibility(View.GONE);
 
-            // 🔥 종료 날짜 보이기
+            // 종료 날짜 보이기
             binding.layoutMoveOutContainer.setVisibility(View.VISIBLE);
 
         } else {
@@ -576,8 +576,6 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
     }
     /**
      * 주변 시설 점수 계산
-     * categoryCode: CS2, PM9 등
-     * radius: 검색 반경 (m)
      */
     private int calculateFacilityScore(double lat, double lng, String categoryCode, int radius) {
         if (lat == 0.0 && lng == 0.0) return 0;
@@ -643,9 +641,6 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
 
 
 
-    /**
-     * 좌표 변환 후 실제 저장 수행
-     */
     private void savePropertyWithCoordinates(String hostId, String title, String description, String location) {
         android.util.Log.d("Geocoding", "=== 저장 시작 (위도: " + selectedLatitude + ", 경도: " + selectedLongitude + ") ===");
 
@@ -667,7 +662,7 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
     }
 
 
-    // ShortTerm 저장 시 scores 포함
+    // ShortTerm 저장 시 scores 포함시키기
     private void saveShortTermProperty(String hostId, String title, String description, String location, HashMap<String, Object> scores) {
         String weeklyPrice = binding.etWeeklyPrice.getText().toString().trim();
         String roomType = binding.etRoomType.getText().toString().trim();
@@ -745,7 +740,7 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
                     pricing,
                     locationMap,
                     amenities,
-                    scores // 여기 점수 넣기
+                    scores
             );
 
             shortTermRepo.save(property, this::handleSaveResult);
@@ -846,7 +841,7 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
             return;
         }
 
-        // 방 타입 처리
+        // 방 타입 처리 (기능 제외)
         if (roomType.isEmpty()) {
             roomType = "원룸";
         }
@@ -927,7 +922,7 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
 
     private void handleSaveResult(String propertyId) {
         binding.btnSubmit.setEnabled(true);
-        // 내가 올린 매물 Firebase User에 등록
+        // 내가 올린 매물 Firebase User에 등록하는 기능
         if (propertyId != null) {
             FirebaseUser currentUser = mAuth.getCurrentUser();
             if (currentUser != null) {
@@ -1004,6 +999,6 @@ public class UploadPropertyBottomSheet extends BottomSheetDialogFragment {
         void onScoreCalculated(HashMap<String, Object> scores);
     }
     interface DateSelectedCallback {
-        void onDateSelected(String date); // yyyy-MM-dd 형식
+        void onDateSelected(String date);
     }
 }
